@@ -1,0 +1,3 @@
+script_output = listen(sys.stdout)
+
+input if interactive else print(debug_object)
