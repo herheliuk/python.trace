@@ -45,10 +45,11 @@ def trace_function(frame, event, arg):
             debug_object = json.dumps(
                 {
                     f'line {line_number}': linecache.getline(code_filename, line_number).strip(),
-                    'scope': filter_scope(frame.f_locals if function_name else frame.f_globals)
+                    'globals': filter_scope(frame.f_globals),
+                    **({'locals': filter_scope(frame.f_locals)} if function_name else {})
                 },
-                indent=4,
-                default=lambda obj: f"<{type(obj).__name__}>" # json fallback
+                indent = 4,
+                default = lambda obj: f"<{type(obj).__name__}>" # json fallback
             )
             input(debug_object) if interactive else print(debug_object)
         case 'return':

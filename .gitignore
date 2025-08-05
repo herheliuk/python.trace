@@ -7,3 +7,5 @@ env/
 
 output.txt
 _output.txt
+debug_scopes.json
+_debug_scopes.json
