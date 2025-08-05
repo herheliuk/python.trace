@@ -5,5 +5,5 @@ env/
 *.env
 *.db
 
-output.txt
-_output.txt
+backend.trace.txt
+backend.ast.txt

@@ -16,7 +16,7 @@ if not (script_dir := script_path.parent) in sys.path:
     os.chdir(script_dir)
 
 if not (interactive := input('step through? ').strip()):
-    output_file = this_script_dir / 'output.txt'
+    output_file = this_script_dir / (script_path.name.rpartition('.')[0] + '.trace.txt')
     print(f'writing to {output_file.name}...')
     sys.stdout = open(output_file, 'w')
 
