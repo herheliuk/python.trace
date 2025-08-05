@@ -50,7 +50,7 @@ def trace_function(frame, event, arg):
                     **({'locals': filter_scope(frame.f_locals)} if function_name else {})
                 },
                 indent = 4,
-                default = lambda obj: f"<{type(obj).__name__}>" # json fallback
+                default = lambda obj: f"<{type(obj).__name__}>"
             )
             input(debug_object) if interactive else print(debug_object)
         case 'return':
