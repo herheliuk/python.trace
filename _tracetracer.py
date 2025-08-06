@@ -50,9 +50,12 @@ def trace_function(frame, event, arg):
             debug_data = json.dumps(
                 {
                     'module': Path(code_filename).name,
-                    f'line {line_number}': linecache.getline(code_filename, line_number).strip(),
+                    f'line {{{line_number}}}': linecache.getline(code_filename, line_number).strip(),
                     'globals': filter_scope(frame.f_globals),
-                    **({'function': function_name, 'locals': filter_scope(frame.f_locals)} if function_name else {})
+                    **({
+                        'function': function_name,
+                        'locals': filter_scope(frame.f_locals)
+                    } if function_name else {})
                 },
                 indent = 4,
                 default = lambda obj: f"<{type(obj).__name__}>"
