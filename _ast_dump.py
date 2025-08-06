@@ -16,5 +16,5 @@ tree = ast.parse(source_code)
 
 tree_dump = ast.dump(tree, indent=4)
 
-with open(this_script_dir / (script_path.name.rpartition('.')[0] + '.ast.txt'), 'w') as file:
+with open(this_script_dir / (script_path.stem + '.ast.txt'), 'w') as file:
     file.write(tree_dump)

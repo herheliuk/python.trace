@@ -16,7 +16,7 @@ if not (script_dir := script_path.parent) in sys.path:
     os.chdir(script_dir)
 
 if not (interactive := input('step through? ').strip()):
-    output_file = this_script_dir / (script_path.name.rpartition('.')[0] + '.trace.txt')
+    output_file = this_script_dir / (script_path.stem + '.trace.txt')
     print(f'writing to {output_file.name}...')
     sys.stdout = open(output_file, 'w')
 
@@ -42,7 +42,7 @@ def trace_function(frame, event, arg):
             return trace_function
         case 'line':
             line_number = frame.f_lineno
-            debug_object = json.dumps(
+            debug_data = json.dumps(
                 {
                     'module': Path(code_filename).name,
                     f'line {line_number}': linecache.getline(code_filename, line_number).strip(),
@@ -52,7 +52,7 @@ def trace_function(frame, event, arg):
                 indent = 4,
                 default = lambda obj: f"<{type(obj).__name__}>"
             )
-            input(debug_object) if interactive else print(debug_object)
+            input(debug_data) if interactive else print(debug_data)
         case 'return':
             if function_name:
                 print(f"{function_name} returned{f' {arg}' if arg else ''}")
