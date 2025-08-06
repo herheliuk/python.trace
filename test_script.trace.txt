@@ -36,6 +36,7 @@ calling adD
         "y": 10,
         "adD": "<function>"
     },
+    "function": "adD",
     "locals": {
         "a": 5,
         "b": 10
@@ -49,6 +50,7 @@ calling adD
         "y": 10,
         "adD": "<function>"
     },
+    "function": "adD",
     "locals": {
         "a": 5,
         "b": 10,
