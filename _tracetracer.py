@@ -60,7 +60,7 @@ def trace_function(frame, event, arg):
             input(debug_data) if interactive else print(debug_data)
         case 'return':
             if function_name:
-                print(f"{function_name} returned{' ' + arg if arg else ''}")
+                print(f"{function_name} returned{f' {arg}' if arg else ''}")
 
 try:
     sys.settrace(trace_function)
