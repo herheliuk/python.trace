@@ -16,6 +16,8 @@ if not debug_script_path.exists():
     print(f'Error: File "{debug_script_path.name}" does not exist.')
     sys.exit(1)
 
+paths_to_trace = get_paths_to_trace(debug_script_path)
+
 script_dir = Path.cwd()
 if not (debug_script_dir := debug_script_path.parent) in sys.path:
     sys.path.insert(0, str(debug_script_dir))
@@ -25,8 +27,6 @@ if not (interactive := input('step through? ').strip()):
     output_file = script_dir / (debug_script_path.stem + '.trace.txt')
     print(f'writing to {output_file.name}...')
     sys.stdout = open(output_file, 'w')
-
-paths_to_trace = get_paths_to_trace(debug_script_path)
 
 def filter_scope(scope):
     return {key: value for key, value in scope.items() if not key.startswith("__")}
