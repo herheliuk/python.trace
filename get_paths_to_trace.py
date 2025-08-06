@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # chatgpt.com
 
 import ast, sys
@@ -34,5 +36,5 @@ def main(script):
     return paths_to_trace
     
 if __name__ == "__main__":
-    if len(sys.argv) < 2: print("Usage: python <this script> <script.py>")
+    if len(sys.argv) < 2: print(f"Usage: python {sys.argv[0]} <script to retrive paths from>")
     else: print("\n".join(main(sys.argv[1])))

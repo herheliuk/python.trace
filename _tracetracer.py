@@ -4,27 +4,32 @@ import os, sys
 import runpy, linecache, json
 from pathlib import Path
 
+from get_paths_to_trace import main as get_paths_to_trace
+
 if len(sys.argv) != 2:
     print(f'Usage: python {sys.argv[0]} <script to debug>')
     sys.exit(1)
 
-script_path = Path(sys.argv[1]).resolve()
+debug_script_path = Path(sys.argv[1]).resolve()
 
-this_script_dir = Path.cwd()
-if not (script_dir := script_path.parent) in sys.path:
-    sys.path.insert(0, str(script_dir))
-    os.chdir(script_dir)
+if not debug_script_path.exists():
+    print(f'Error: File "{debug_script_path.name}" does not exist.')
+    sys.exit(1)
+
+script_dir = Path.cwd()
+if not (debug_script_dir := debug_script_path.parent) in sys.path:
+    sys.path.insert(0, str(debug_script_dir))
+    os.chdir(debug_script_dir)
 
 if not (interactive := input('step through? ').strip()):
-    output_file = this_script_dir / (script_path.stem + '.trace.txt')
+    output_file = script_dir / (debug_script_path.stem + '.trace.txt')
     print(f'writing to {output_file.name}...')
     sys.stdout = open(output_file, 'w')
 
-from get_paths_to_trace import main as get_paths_to_trace
-paths_to_trace = get_paths_to_trace(script_path)
+paths_to_trace = get_paths_to_trace(debug_script_path)
 
-def filter_scope(namespace):
-    return {key: value for key, value in namespace.items() if not key.startswith("__")}
+def filter_scope(scope):
+    return {key: value for key, value in scope.items() if not key.startswith("__")}
 
 def trace_function(frame, event, arg):
     code_frame = frame.f_code
@@ -55,10 +60,10 @@ def trace_function(frame, event, arg):
             input(debug_data) if interactive else print(debug_data)
         case 'return':
             if function_name:
-                print(f"{function_name} returned{f' {arg}' if arg else ''}")
+                print(f"{function_name} returned{' ' + arg if arg else ''}")
 
 try:
     sys.settrace(trace_function)
-    runpy.run_path(script_path)
+    runpy.run_path(debug_script_path)
 finally:
     sys.settrace(None)
