@@ -1,7 +1,7 @@
 from pathlib import Path
 import ast
 
-def find_python_imports(script_path: Path, should_exist: bool = True) -> set[Path]:
+def find_python_imports(script_path: Path) -> set[Path]:
     script_dir = script_path.parent
     content = script_path.read_text()
     tree = ast.parse(content)
@@ -13,8 +13,7 @@ def find_python_imports(script_path: Path, should_exist: bool = True) -> set[Pat
             for alias in node.names:
                 name = base_name or alias.name
                 candidate = script_dir.joinpath(*name.split('.')).with_suffix('.py')
-                if should_exist and not candidate.exists():
-                    raise FileNotFoundError(f"Expected file {candidate} does not exist")
-                scripts.add(candidate)
+                if candidate.exists():
+                    scripts.add(candidate)
 
     return scripts
