@@ -37,13 +37,11 @@ def trace_function(frame, event, arg):
 
     if code_filepath not in paths_to_trace: return
     
-    code_name = code_frame.co_name
-    function_name = None if code_name.startswith('<') else code_name
-    module = code_name == '<module>'
-    
     filename = Path(code_filepath).name
     
-    target = function_name or filename if module else code_name
+    code_name = code_frame.co_name
+    function_name = None if code_name.startswith('<') else code_name
+    target = function_name or filename if code_name == '<module>' else code_name
     
     match event:
         case 'call':
