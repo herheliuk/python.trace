@@ -6,27 +6,21 @@ from pathlib import Path
 
 from ast_functions import find_python_imports
 
-if len(sys.argv) != 2:
-    print(f'Usage: python {sys.argv[0]} <script to debug>')
-    sys.exit(1)
-
+assert len(sys.argv) == 2
 debug_script_path = Path(sys.argv[1]).resolve()
-
-if not debug_script_path.exists():
-    print(f'Error: File "{debug_script_path.name}" does not exist.')
-    sys.exit(1)
+assert debug_script_path.exists()
 
 paths_to_trace = find_python_imports(debug_script_path)
 paths_to_trace = {str(file) for file in paths_to_trace}
 
-script_dir = Path.cwd()
+this_script_dir = Path.cwd()
 debug_script_dir = debug_script_path.parent
 if not debug_script_dir in sys.path:
     sys.path.insert(0, str(debug_script_dir))
     os.chdir(debug_script_dir)
 
 if not (interactive := input('step through? ').strip()):
-    output_file = script_dir / (debug_script_path.stem + '.trace.txt')
+    output_file = this_script_dir / (debug_script_path.stem + '.trace.txt')
     print(f'writing to {output_file.name}...')
     sys.stdout = open(output_file, 'w')
 
