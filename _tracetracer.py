@@ -6,9 +6,11 @@ from pathlib import Path
 
 from ast_functions import find_python_imports
 
-assert len(sys.argv) == 2
+assert len(sys.argv) == 2, f'Usage: python {sys.argv[0]} <script to debug>'
+
 debug_script_path = Path(sys.argv[1]).resolve()
-assert debug_script_path.exists()
+
+assert debug_script_path.exists(), f'File "{debug_script_path.name}" does not exist.'
 
 paths_to_trace = find_python_imports(debug_script_path)
 paths_to_trace = {str(file) for file in paths_to_trace}
