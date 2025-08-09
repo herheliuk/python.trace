@@ -1,11 +1,13 @@
+calling test_script.py
+
 {
-    "module": "test_script.py",
+    "filename": "test_script.py",
     "line {3}": "x = 5",
     "globals": {}
 }
 
 {
-    "module": "test_script.py",
+    "filename": "test_script.py",
     "line {4}": "y = 10",
     "globals": {
         "x": 5
@@ -13,7 +15,7 @@
 }
 
 {
-    "module": "test_script.py",
+    "filename": "test_script.py",
     "line {6}": "def adD(a, b): #comm",
     "globals": {
         "x": 5,
@@ -22,7 +24,7 @@
 }
 
 {
-    "module": "test_script.py",
+    "filename": "test_script.py",
     "line {10}": "z = adD(x, y)",
     "globals": {
         "x": 5,
@@ -34,7 +36,7 @@
 calling adD
 
 {
-    "module": "test_script.py",
+    "filename": "test_script.py",
     "line {7}": "tqeww = 1",
     "globals": {
         "x": 5,
@@ -49,7 +51,7 @@ calling adD
 }
 
 {
-    "module": "test_script.py",
+    "filename": "test_script.py",
     "line {8}": "return a + b",
     "globals": {
         "x": 5,
@@ -67,7 +69,7 @@ calling adD
 adD returned 15
 
 {
-    "module": "test_script.py",
+    "filename": "test_script.py",
     "line {11}": "f\"z = {z}\" #comm",
     "globals": {
         "x": 5,
@@ -78,7 +80,7 @@ adD returned 15
 }
 
 {
-    "module": "test_script.py",
+    "filename": "test_script.py",
     "line {13}": "for i in range(1):",
     "globals": {
         "x": 5,
@@ -89,7 +91,7 @@ adD returned 15
 }
 
 {
-    "module": "test_script.py",
+    "filename": "test_script.py",
     "line {14}": "z += i",
     "globals": {
         "x": 5,
@@ -101,7 +103,7 @@ adD returned 15
 }
 
 {
-    "module": "test_script.py",
+    "filename": "test_script.py",
     "line {13}": "for i in range(1):",
     "globals": {
         "x": 5,
@@ -113,7 +115,7 @@ adD returned 15
 }
 
 {
-    "module": "test_script.py",
+    "filename": "test_script.py",
     "line {16}": "print(z)",
     "globals": {
         "x": 5,
@@ -125,3 +127,5 @@ adD returned 15
 }
 
 15
+test_script.py returned
+

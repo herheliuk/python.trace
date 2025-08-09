@@ -33,24 +33,26 @@ def filter_scope(scope):
 
 def trace_function(frame, event, arg):
     code_frame = frame.f_code
-    code_filename = code_frame.co_filename
+    code_filepath = code_frame.co_filename
 
-    if code_filename not in paths_to_trace: return
-
+    if code_filepath not in paths_to_trace: return
+    
+    filename = Path(code_filepath).name
+    
     code_name = code_frame.co_name
-    function_name = None if code_name == '<module>' else code_name
+    function_name = None if code_name.startswith('<') else code_name
+    module = filename if code_name == '<module>' else None
     
     match event:
         case 'call':
-            if function_name:
-                print(f"calling {function_name}\n")
+            print(f"calling {function_name or module or code_name}\n")
             return trace_function
         case 'line':
             line_number = frame.f_lineno
             debug_data = json.dumps(
                 {
-                    'module': Path(code_filename).name,
-                    f'line {{{line_number}}}': linecache.getline(code_filename, line_number).strip(),
+                    'filename': filename,
+                    f'line {{{line_number}}}': linecache.getline(code_filepath, line_number).strip(),
                     'globals': filter_scope(frame.f_globals),
                     **({
                         'function': function_name,
@@ -62,8 +64,7 @@ def trace_function(frame, event, arg):
             ) + '\n'
             input(debug_data) if interactive else print(debug_data)
         case 'return':
-            if function_name:
-                print(f"{function_name} returned{f' {arg}' if arg else ''}\n")
+            print(f"{function_name or module or code_name} returned{f' {arg}' if arg else ''}\n")
 
 try:
     sys.settrace(trace_function)
