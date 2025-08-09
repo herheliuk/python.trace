@@ -127,5 +127,5 @@ adD returned 15
 }
 
 15
-test_script.py returned
+test_script.py returned None
 
