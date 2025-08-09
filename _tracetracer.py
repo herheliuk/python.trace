@@ -38,9 +38,10 @@ def filter_scope(scope):
 def trace_function(frame, event, arg):
     code_frame = frame.f_code
     code_filepath = code_frame.co_filename
+    
+    if code_filepath not in paths_to_trace:
+        return
 
-    if code_filepath not in paths_to_trace: return
-            
     code_name = code_frame.co_name
     filename = Path(code_filepath).name
 
@@ -55,6 +56,7 @@ def trace_function(frame, event, arg):
         case 'call':
             print(f"calling {target}\n")
             return trace_function
+
         case 'line':
             line_number = frame.f_lineno
             debug_data = json.dumps(
@@ -71,6 +73,7 @@ def trace_function(frame, event, arg):
                 default = lambda obj: f"<{type(obj).__name__}>"
             ) + '\n'
             input(debug_data) if interactive else print(debug_data)
+        
         case 'return':
             print(f"{target} returned {arg}\n")
 
@@ -79,4 +82,5 @@ try:
     runpy.run_path(debug_script_path)
 finally:
     sys.settrace(None)
-    if not interactive: sys.stdout.close()
+    if not interactive: 
+        sys.stdout.close()
