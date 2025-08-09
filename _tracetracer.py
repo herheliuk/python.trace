@@ -43,7 +43,7 @@ def trace_function(frame, event, arg):
     match event:
         case 'call':
             if function_name:
-                print(f"calling {function_name}")
+                print(f"calling {function_name}\n")
             return trace_function
         case 'line':
             line_number = frame.f_lineno
@@ -59,11 +59,11 @@ def trace_function(frame, event, arg):
                 },
                 indent = 4,
                 default = lambda obj: f"<{type(obj).__name__}>"
-            )
+            ) + '\n'
             input(debug_data) if interactive else print(debug_data)
         case 'return':
             if function_name:
-                print(f"{function_name} returned{f' {arg}' if arg else ''}")
+                print(f"{function_name} returned{f' {arg}' if arg else ''}\n")
 
 try:
     sys.settrace(trace_function)
