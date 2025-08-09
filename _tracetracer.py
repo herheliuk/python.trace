@@ -24,8 +24,10 @@ debug_script_dir = debug_script_path.parent
 if not debug_script_dir in sys.path:
     sys.path.insert(0, str(debug_script_dir))
     os.chdir(debug_script_dir)
+    
+interactive = input('step through? ').strip()
 
-if not (interactive := input('step through? ').strip()):
+if not interactive:
     output_file = this_script_dir / (debug_script_path.stem + '.trace.txt')
     print(f'writing to {output_file.name}...')
     sys.stdout = open(output_file, 'w')
@@ -77,4 +79,4 @@ try:
     runpy.run_path(debug_script_path)
 finally:
     sys.settrace(None)
-    if interactive: sys.stdout.close()
+    if not interactive: sys.stdout.close()
