@@ -1,7 +1,7 @@
 from pathlib import Path
 import ast
 
-def find_used_python_scripts(script_path: Path) -> list[Path]:
+def find_python_imports(script_path: Path, should_exist: bool = True) -> set[Path]:
     script_dir = script_path.parent
     content = script_path.read_text()
     tree = ast.parse(content)
@@ -9,15 +9,11 @@ def find_used_python_scripts(script_path: Path) -> list[Path]:
 
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
-            module = node.module if isinstance(node, ast.ImportFrom) else None
-            names = node.names if hasattr(node, 'names') else []
-            for alias in names:
-                # For ast.Import, alias.name is the module name
-                # For ast.ImportFrom, node.module is the module name
-                name = alias.name if module is None else module
-                parts = name.split('.')
-                candidate = script_dir.joinpath(*parts).with_suffix('.py')
-                if candidate.exists():
+            base_name = node.module if isinstance(node, ast.ImportFrom) else None
+            for alias in node.names:
+                name = base_name or alias.name
+                candidate = script_dir.joinpath(*name.split('.')).with_suffix('.py')
+                if not should_exist or candidate.exists():
                     scripts.add(candidate)
 
     return scripts

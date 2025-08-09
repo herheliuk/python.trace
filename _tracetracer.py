@@ -4,7 +4,7 @@ import os, sys
 import runpy, linecache, json
 from pathlib import Path
 
-from ast_functions import find_used_python_scripts
+from ast_functions import find_python_imports
 
 if len(sys.argv) != 2:
     print(f'Usage: python {sys.argv[0]} <script to debug>')
@@ -16,11 +16,12 @@ if not debug_script_path.exists():
     print(f'Error: File "{debug_script_path.name}" does not exist.')
     sys.exit(1)
 
-paths_to_trace = find_used_python_scripts(debug_script_path)
+paths_to_trace = find_python_imports(debug_script_path)
 paths_to_trace = [str(file) for file in paths_to_trace]
 
 script_dir = Path.cwd()
-if not (debug_script_dir := debug_script_path.parent) in sys.path:
+debug_script_dir = debug_script_path.parent
+if not debug_script_dir in sys.path:
     sys.path.insert(0, str(debug_script_dir))
     os.chdir(debug_script_dir)
 
