@@ -17,7 +17,7 @@ if not debug_script_path.exists():
     sys.exit(1)
 
 paths_to_trace = find_python_imports(debug_script_path)
-paths_to_trace = [str(file) for file in paths_to_trace]
+paths_to_trace = {str(file) for file in paths_to_trace}
 
 script_dir = Path.cwd()
 debug_script_dir = debug_script_path.parent
