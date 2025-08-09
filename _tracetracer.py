@@ -37,15 +37,17 @@ def trace_function(frame, event, arg):
 
     if code_filepath not in paths_to_trace: return
     
-    filename = Path(code_filepath).name
-    
     code_name = code_frame.co_name
     function_name = None if code_name.startswith('<') else code_name
-    module = filename if code_name == '<module>' else None
+    module = code_name == '<module>'
+    
+    filename = Path(code_filepath).name
+    
+    target = function_name or filename if module else code_name
     
     match event:
         case 'call':
-            print(f"calling {function_name or module or code_name}\n")
+            print(f"calling {target}\n")
             return trace_function
         case 'line':
             line_number = frame.f_lineno
@@ -64,7 +66,7 @@ def trace_function(frame, event, arg):
             ) + '\n'
             input(debug_data) if interactive else print(debug_data)
         case 'return':
-            print(f"{function_name or module or code_name} returned{f' {arg}' if arg else ''}\n")
+            print(f"{target} returned{f' {arg}' if arg else ''}\n")
 
 try:
     sys.settrace(trace_function)
