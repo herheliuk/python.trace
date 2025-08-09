@@ -4,7 +4,9 @@ import sys, ast
 from pathlib import Path
 
 assert len(sys.argv) == 2, f'Usage: python {sys.argv[0]} <script to dump>'
+
 dump_script_path = Path(sys.argv[1]).resolve()
+
 assert dump_script_path.exists(), f'File "{dump_script_path.name}" does not exist.'
 
 source_code = dump_script_path.read_text()

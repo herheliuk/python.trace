@@ -13,7 +13,8 @@ def find_python_imports(script_path: Path, should_exist: bool = True) -> set[Pat
             for alias in node.names:
                 name = base_name or alias.name
                 candidate = script_dir.joinpath(*name.split('.')).with_suffix('.py')
-                if not should_exist or candidate.exists():
-                    scripts.add(candidate)
+                if should_exist and not candidate.exists():
+                    raise FileNotFoundError(f"Expected file {candidate} does not exist")
+                scripts.add(candidate)
 
     return scripts
