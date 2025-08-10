@@ -42,7 +42,7 @@ def main(debug_script_path):
         sys.stdout = buffer
 
     try:
-        last_scopes = defaultdict(lambda: defaultdict(lambda: ({}, {})))
+        last_scopes = defaultdict(dict)
 
         def trace_function(frame, event, arg):
             code_frame = frame.f_code
@@ -70,8 +70,6 @@ def main(debug_script_path):
                 global_changes = diff_scope(old_globals, cur_globals)
                 local_changes = diff_scope(old_locals, cur_locals) if function_name else {}
                 
-                last_scopes[code_filepath][function_name] = (cur_globals, cur_locals)
-                
                 if global_changes or local_changes:
                     print(json_pretty({
                         'filename': filename,
@@ -79,6 +77,8 @@ def main(debug_script_path):
                         **({'globals': global_changes} if filter_scope(global_changes) else {}),
                         **({'locals': local_changes} if filter_scope(local_changes) else {})
                     }) + '\n')
+                
+                last_scopes[code_filepath][function_name] = (cur_globals, cur_locals)
 
             print(f"{f' {event} ':*^50}\n")
             
