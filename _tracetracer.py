@@ -3,6 +3,7 @@
 import os, sys, runpy, linecache, json, io
 from pathlib import Path
 from functools import partial
+from collections import defaultdict
 
 from ast_functions import find_python_imports
 
@@ -14,18 +15,14 @@ def default_json_handler(obj):
 
 json_pretty = partial(json.dumps, indent=4, default=default_json_handler)
 
-def filter_scope(scope):
+def filter_scope(scope: dict) -> dict:
     startswith = str.startswith
     return {key: value for key, value in scope.items() if not startswith(key, "__")}
 
-def diff_scope(old: dict, new: dict) -> dict:
-    changes = {}
-    for key, value in new.items():
-        if key not in old or old[key] != value:
-            changes[key] = value
-    for key in old.keys() - new.keys():
-        changes[key] = "<deleted>"
-    return changes
+def diff_scope(old_scope: dict, new_scope: dict) -> dict:
+    changes = {key: value for key, value in new_scope.items() if old_scope.get(key) != value}
+    deleted = {key: "<deleted>" for key in old_scope.keys() - new_scope.keys()}
+    return {**changes, **deleted}
 
 def main(debug_script_path):
     paths_to_trace = {str(file) for file in find_python_imports(debug_script_path)}
@@ -45,7 +42,7 @@ def main(debug_script_path):
         sys.stdout = buffer
 
     try:
-        last_scopes = {}
+        last_scopes = defaultdict(lambda: defaultdict(lambda: ({}, {})))
 
         def trace_function(frame, event, arg):
             code_frame = frame.f_code
@@ -68,12 +65,12 @@ def main(debug_script_path):
                 cur_globals = dict(frame.f_globals)
                 cur_locals = dict(frame.f_locals) if function_name else {}
                  
-                old_globals, old_locals = last_scopes.get(code_filepath, ({}, {}))
+                old_globals, old_locals = last_scopes[code_filepath].get(function_name, ({}, {}))
                 
                 global_changes = diff_scope(old_globals, cur_globals)
                 local_changes = diff_scope(old_locals, cur_locals) if function_name else {}
                 
-                last_scopes[code_filepath] = (cur_globals, cur_locals)
+                last_scopes[code_filepath][function_name] = (cur_globals, cur_locals)
                 
                 if global_changes or local_changes:
                     print(json_pretty({
@@ -88,10 +85,10 @@ def main(debug_script_path):
             if event == 'call':
                 message = f"calling {target}\n"
                 input(message) if interactive else print(message)
-                if not last_scopes.get(code_filepath, None):
+                if not last_scopes[code_filepath].get(function_name, None):
                     cur_globals = dict(frame.f_globals)
                     cur_locals = dict(frame.f_locals) if function_name else {}
-                    last_scopes[code_filepath] = (cur_globals, cur_locals)
+                    last_scopes[code_filepath][function_name] = (cur_globals, cur_locals)
                 return trace_function
             
             elif event == 'line':

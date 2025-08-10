@@ -55,15 +55,6 @@ calling test_script.py
 
 calling adD
 
-{
-    "filename": "test_script.py",
-    "function": "adD",
-    "locals": {
-        "a": 5,
-        "b": 10
-    }
-}
-
 ********************** line **********************
 
 {
