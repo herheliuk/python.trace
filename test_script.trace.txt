@@ -11,7 +11,7 @@ calling test_script.py
 
 {
     "filename": "test_script.py",
-    "new globals": {
+    "globals": {
         "x": 5
     }
 }
@@ -25,7 +25,7 @@ calling test_script.py
 
 {
     "filename": "test_script.py",
-    "new globals": {
+    "globals": {
         "y": 10
     }
 }
@@ -39,7 +39,7 @@ calling test_script.py
 
 {
     "filename": "test_script.py",
-    "new globals": {
+    "globals": {
         "adD": "<function>"
     }
 }
@@ -48,7 +48,7 @@ calling test_script.py
 
 {
     "filename": "test_script.py",
-    "line {10}": "z = adD(x, y)"
+    "line {11}": "z = adD(x, y)"
 }
 
 ********************** call **********************
@@ -58,7 +58,7 @@ calling adD
 {
     "filename": "test_script.py",
     "function": "adD",
-    "new locals": {
+    "locals": {
         "a": 5,
         "b": 10
     }
@@ -75,7 +75,7 @@ calling adD
 {
     "filename": "test_script.py",
     "function": "adD",
-    "new locals": {
+    "locals": {
         "tqeww": 1
     }
 }
@@ -85,7 +85,23 @@ calling adD
 {
     "filename": "test_script.py",
     "function": "adD",
-    "line {8}": "return a + b"
+    "line {8}": "del tqeww"
+}
+
+{
+    "filename": "test_script.py",
+    "function": "adD",
+    "locals": {
+        "tqeww": "<deleted>"
+    }
+}
+
+********************** line **********************
+
+{
+    "filename": "test_script.py",
+    "function": "adD",
+    "line {9}": "return a + b"
 }
 
 ********************* return *********************
@@ -94,7 +110,7 @@ adD returned 15
 
 {
     "filename": "test_script.py",
-    "new globals": {
+    "globals": {
         "z": 15
     }
 }
@@ -103,19 +119,19 @@ adD returned 15
 
 {
     "filename": "test_script.py",
-    "line {11}": "f\"z = {z}\" #comm"
+    "line {12}": "f\"z = {z}\" #comm"
 }
 
 ********************** line **********************
 
 {
     "filename": "test_script.py",
-    "line {13}": "for i in range(1):"
+    "line {14}": "for i in range(1):"
 }
 
 {
     "filename": "test_script.py",
-    "new globals": {
+    "globals": {
         "i": 0
     }
 }
@@ -124,21 +140,21 @@ adD returned 15
 
 {
     "filename": "test_script.py",
-    "line {14}": "z += i"
+    "line {15}": "z += i"
 }
 
 ********************** line **********************
 
 {
     "filename": "test_script.py",
-    "line {13}": "for i in range(1):"
+    "line {14}": "for i in range(1):"
 }
 
 ********************** line **********************
 
 {
     "filename": "test_script.py",
-    "line {16}": "print(z)"
+    "line {17}": "print(z)"
 }
 
 15

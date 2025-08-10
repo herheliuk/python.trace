@@ -1,2 +1,1 @@
-show only changes in scope | show scope before & after/changes | show the scope AFTER the line has been runned instead
-intercept scipt prints {print: ...}
+? intercept script prints {print: ...}

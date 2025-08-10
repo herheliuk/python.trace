@@ -5,6 +5,7 @@ y = 10
 
 def adD(a, b): #comm
     tqeww = 1
+    del tqeww
     return a + b
 
 z = adD(x, y)

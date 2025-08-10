@@ -5,7 +5,7 @@ def find_python_imports(script_path: Path) -> set[Path]:
     script_dir = script_path.parent
     content = script_path.read_text()
     tree = ast.parse(content)
-    scripts = {script_path}
+    script_paths = {script_path}
 
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
@@ -14,6 +14,6 @@ def find_python_imports(script_path: Path) -> set[Path]:
                 name = base_name or alias.name
                 candidate = script_dir.joinpath(*name.split('.')).with_suffix('.py')
                 if candidate.exists():
-                    scripts.add(candidate)
+                    script_paths.add(candidate)
 
-    return scripts
+    return script_paths

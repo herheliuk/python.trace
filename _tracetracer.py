@@ -18,7 +18,7 @@ def filter_scope(scope):
     startswith = str.startswith
     return {key: value for key, value in scope.items() if not startswith(key, "__")}
 
-def diff_scope(old, new):
+def diff_scope(old: dict, new: dict) -> dict:
     changes = {}
     for key, value in new.items():
         if key not in old or old[key] != value:
@@ -63,10 +63,10 @@ def main(debug_script_path):
             else:
                 target = code_name
                 function_name = None if code_name.startswith('<') else code_name
-
+            
             if event in ('line', 'return'):
-                cur_globals = filter_scope(frame.f_globals)
-                cur_locals = filter_scope(frame.f_locals) if function_name else {}
+                cur_globals = dict(frame.f_globals)
+                cur_locals = dict(frame.f_locals) if function_name else {}
                  
                 old_globals, old_locals = last_scopes.get(code_filepath, ({}, {}))
                 
@@ -79,8 +79,8 @@ def main(debug_script_path):
                     print(json_pretty({
                         'filename': filename,
                         **({'function': function_name} if function_name else {}),
-                        **({'new globals': global_changes} if global_changes else {}),
-                        **({'new locals': local_changes} if local_changes else {})
+                        **({'globals': global_changes} if filter_scope(global_changes) else {}),
+                        **({'locals': local_changes} if filter_scope(local_changes) else {})
                     }) + '\n')
 
             print(f"{f' {event} ':*^50}\n")
@@ -88,6 +88,10 @@ def main(debug_script_path):
             if event == 'call':
                 message = f"calling {target}\n"
                 input(message) if interactive else print(message)
+                if not last_scopes.get(code_filepath, None):
+                    cur_globals = dict(frame.f_globals)
+                    cur_locals = dict(frame.f_locals) if function_name else {}
+                    last_scopes[code_filepath] = (cur_globals, cur_locals)
                 return trace_function
             
             elif event == 'line':
