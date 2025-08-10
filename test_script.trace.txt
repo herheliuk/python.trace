@@ -1,68 +1,60 @@
-********************** call **********************
-
+---------------------- call ----------------------
 calling test_script.py
-
-********************** line **********************
-
+---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line {3}": "x = 5"
+    "line": 3,
+    "code": "x = 5"
 }
-
 {
     "filename": "test_script.py",
     "globals": {
         "x": 5
     }
 }
-
-********************** line **********************
-
+---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line {4}": "y = 10"
+    "line": 4,
+    "code": "y = 10"
 }
-
 {
     "filename": "test_script.py",
     "globals": {
         "y": 10
     }
 }
-
-********************** line **********************
-
+---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line {6}": "def adD(a, b): #comm"
+    "line": 6,
+    "code": "def adD(a, b): #comm"
 }
-
 {
     "filename": "test_script.py",
     "globals": {
         "adD": "<function>"
     }
 }
-
-********************** line **********************
-
+---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line {11}": "z = adD(x, y)"
+    "line": 11,
+    "code": "z = adD(x, y)"
 }
-
-********************** call **********************
-
+---------------------- call ----------------------
 calling adD
-
-********************** line **********************
-
+{
+    "a": 5,
+    "b": 10
+}
+---------------------- line ----------------------
 {
     "filename": "test_script.py",
     "function": "adD",
-    "line {7}": "tqeww = 1"
+    "line": 7,
+    "code": "tqeww = 1"
 }
-
 {
     "filename": "test_script.py",
     "function": "adD",
@@ -70,15 +62,13 @@ calling adD
         "tqeww": 1
     }
 }
-
-********************** line **********************
-
+---------------------- line ----------------------
 {
     "filename": "test_script.py",
     "function": "adD",
-    "line {8}": "del tqeww"
+    "line": 8,
+    "code": "del tqeww"
 }
-
 {
     "filename": "test_script.py",
     "function": "adD",
@@ -86,70 +76,56 @@ calling adD
         "tqeww": "<deleted>"
     }
 }
-
-********************** line **********************
-
+---------------------- line ----------------------
 {
     "filename": "test_script.py",
     "function": "adD",
-    "line {9}": "return a + b"
+    "line": 9,
+    "code": "return a + b"
 }
-
-********************* return *********************
-
+--------------------- return ---------------------
 adD returned 15
-
 {
     "filename": "test_script.py",
     "globals": {
         "z": 15
     }
 }
-
-********************** line **********************
-
+---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line {12}": "f\"z = {z}\" #comm"
+    "line": 12,
+    "code": "f\"z = {z}\" #comm"
 }
-
-********************** line **********************
-
+---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line {14}": "for i in range(1):"
+    "line": 14,
+    "code": "for i in range(1):"
 }
-
 {
     "filename": "test_script.py",
     "globals": {
         "i": 0
     }
 }
-
-********************** line **********************
-
+---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line {15}": "z += i"
+    "line": 15,
+    "code": "z += i"
 }
-
-********************** line **********************
-
+---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line {14}": "for i in range(1):"
+    "line": 14,
+    "code": "for i in range(1):"
 }
-
-********************** line **********************
-
+---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line {17}": "print(z)"
+    "line": 17,
+    "code": "print(z)"
 }
-
-15
-********************* return *********************
-
+--------------------- return ---------------------
 test_script.py returned None
-

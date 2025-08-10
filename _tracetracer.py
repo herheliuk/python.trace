@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
-import os, sys, runpy, linecache, json, io
+import os, sys, runpy, json, io
+from linecache import getline
 from pathlib import Path
 from functools import partial
 from collections import defaultdict
+from traceback import format_tb
 
 from ast_functions import find_python_imports
-
-getline = linecache.getline
 
 def default_json_handler(obj):
     typename = type(obj).__name__
@@ -24,22 +24,15 @@ def diff_scope(old_scope: dict, new_scope: dict) -> dict:
     deleted = {key: "<deleted>" for key in old_scope.keys() - new_scope.keys()}
     return {**changes, **deleted}
 
-def main(debug_script_path):
+def main(debug_script_path, output_file):
     paths_to_trace = {str(file) for file in find_python_imports(debug_script_path)}
 
-    this_script_dir = Path.cwd()
     debug_script_dir = debug_script_path.parent
     if not debug_script_dir in sys.path:
         sys.path.insert(0, str(debug_script_dir))
         os.chdir(debug_script_dir)
 
-    interactive = input('step through? ').strip()
-
-    if not interactive:
-        output_file = this_script_dir / (debug_script_path.stem + '.trace.txt')
-        print(f'writing to {output_file.name}...')
-        buffer = io.StringIO()
-        sys.stdout = buffer
+    buffer = io.StringIO()
 
     try:
         last_scopes = defaultdict(dict)
@@ -57,61 +50,69 @@ def main(debug_script_path):
             if code_name == '<module>':
                 target = filename
                 function_name = None
+                current_locals = {}
             else:
                 target = code_name
                 function_name = None if code_name.startswith('<') else code_name
+                current_locals = dict(frame.f_locals)
+            
+            current_globals = dict(frame.f_globals)
             
             if event in ('line', 'return'):
-                cur_globals = dict(frame.f_globals)
-                cur_locals = dict(frame.f_locals) if function_name else {}
-                 
-                old_globals, old_locals = last_scopes[code_filepath].get(function_name, ({}, {}))
+                old_globals, old_locals = last_scopes[code_filepath][function_name]
                 
-                global_changes = diff_scope(old_globals, cur_globals)
-                local_changes = diff_scope(old_locals, cur_locals) if function_name else {}
+                global_changes = diff_scope(old_globals, current_globals)
+                local_changes = diff_scope(old_locals, current_locals) if function_name else {}
                 
                 if global_changes or local_changes:
-                    print(json_pretty({
+                    buffer.write(json_pretty({
                         'filename': filename,
                         **({'function': function_name} if function_name else {}),
-                        **({'globals': global_changes} if filter_scope(global_changes) else {}),
-                        **({'locals': local_changes} if filter_scope(local_changes) else {})
+                        **({'globals': global_changes} if global_changes else {}),
+                        **({'locals': local_changes} if local_changes else {})
                     }) + '\n')
                 
-                last_scopes[code_filepath][function_name] = (cur_globals, cur_locals)
+                last_scopes[code_filepath][function_name] = (current_globals, current_locals)
 
-            print(f"{f' {event} ':*^50}\n")
+            buffer.write(f"{f' {event} ':-^50}\n")
             
-            if event == 'call':
-                message = f"calling {target}\n"
-                input(message) if interactive else print(message)
-                if not last_scopes[code_filepath].get(function_name, None):
-                    cur_globals = dict(frame.f_globals)
-                    cur_locals = dict(frame.f_locals) if function_name else {}
-                    last_scopes[code_filepath][function_name] = (cur_globals, cur_locals)
-                return trace_function
-            
-            elif event == 'line':
-                message = json_pretty({
+            if event == 'line':
+                buffer.write(json_pretty({
                     'filename': filename,
                     **({'function': function_name} if function_name else {}),
-                    f'line {{{frame.f_lineno}}}': getline(code_filepath, frame.f_lineno).strip()
-                }) + '\n'
-                input(message) if interactive else print(message)
+                    'line': frame.f_lineno,
+                    'code': getline(code_filepath, frame.f_lineno).strip()
+                }) + '\n')
+                return
+            
+            elif event == 'call':
+                buffer.write(f"calling {target}\n")
+                if not last_scopes[code_filepath].get(function_name, None):
+                    last_scopes[code_filepath][function_name] = (current_globals, current_locals)
+                    if current_locals:
+                        buffer.write(json_pretty(current_locals) + '\n')
+                return trace_function
 
             elif event == 'return':
-                print(f"{target} returned {arg}\n")
+                buffer.write(f"{target} returned {arg}\n")
                 del last_scopes[code_filepath][function_name]
+                return
+            
+            elif event == 'exception':
+                exc_type, exc_value, exc_traceback = arg
+                buffer.write(f"{exc_type.__name__}: {exc_value}\n")
+                buffer.write(''.join(format_tb(exc_traceback)))
+                return
 
         sys.settrace(trace_function)
         runpy.run_path(debug_script_path)
     finally:
-        last_scopes.clear()
         sys.settrace(None)
-        if not interactive:
-            sys.stdout = sys.__stdout__
-            output_file.write_bytes(buffer.getvalue().encode('utf-8'))
-            buffer.close()
+        
+        last_scopes.clear()
+        output_file.write_bytes(buffer.getvalue().encode('utf-8'))
+        
+        buffer.close()
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
@@ -123,5 +124,7 @@ if __name__ == '__main__':
     if not debug_script_path.exists():
         print(f'Error: File "{debug_script_path.name}" does not exist.')
         sys.exit(1)
+    
+    output_file = Path.cwd() / (debug_script_path.stem + '.trace.txt')
         
-    main(debug_script_path)
+    main(debug_script_path, output_file)
