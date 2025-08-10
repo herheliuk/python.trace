@@ -6,11 +6,17 @@ from functools import partial
 
 from ast_functions import find_python_imports
 
-json_pretty = partial(json.dumps, indent=4, default=lambda obj: f"<{type(obj).__name__}>")
 getline = linecache.getline
 
+def default_json_handler(obj):
+    typename = type(obj).__name__
+    return f"<{typename}>"
+
+json_pretty = partial(json.dumps, indent=4, default=default_json_handler)
+
 def filter_scope(scope):
-    return {key: value for key, value in scope.items() if not key.startswith("__")}
+    startswith = str.startswith
+    return {key: value for key, value in scope.items() if not startswith(key, "__")}
 
 def diff_scope(old, new):
     changes = {}
@@ -58,45 +64,42 @@ def main(debug_script_path):
                 target = code_name
                 function_name = None if code_name.startswith('<') else code_name
 
-            match event:
-                case 'line' | 'return':
-                    cur_globals = filter_scope(frame.f_globals)
-                    cur_locals = filter_scope(frame.f_locals) if function_name else {}
-
-                    old_globals, old_locals = last_scopes.get(code_filepath, ({}, {}))
-
-                    global_changes = diff_scope(old_globals, cur_globals)
-                    local_changes = diff_scope(old_locals, cur_locals) if function_name else {}
-
-                    last_scopes[code_filepath] = (cur_globals, cur_locals)
-
-                    if global_changes or local_changes:
-                        print(json_pretty({
-                            'filename': filename,
-                            **({'function': function_name} if function_name else {}),
-                            **({'new globals': global_changes} if global_changes else {}),
-                            **({'new locals': local_changes} if local_changes else {})
-                        }) + '\n')
-
-            print(f"{f' {event} ':*^50}\n")
-
-            match event:
-                case 'call':
-                    message = f"calling {target}\n"
-                    input(message) if interactive else print(message)
-                    return trace_function
-
-                case 'line':
-                    message = json_pretty({
+            if event in ('line', 'return'):
+                cur_globals = filter_scope(frame.f_globals)
+                cur_locals = filter_scope(frame.f_locals) if function_name else {}
+                 
+                old_globals, old_locals = last_scopes.get(code_filepath, ({}, {}))
+                
+                global_changes = diff_scope(old_globals, cur_globals)
+                local_changes = diff_scope(old_locals, cur_locals) if function_name else {}
+                
+                last_scopes[code_filepath] = (cur_globals, cur_locals)
+                
+                if global_changes or local_changes:
+                    print(json_pretty({
                         'filename': filename,
                         **({'function': function_name} if function_name else {}),
-                        f'line {{{frame.f_lineno}}}': getline(code_filepath, frame.f_lineno).strip()
-                    }) + '\n'
+                        **({'new globals': global_changes} if global_changes else {}),
+                        **({'new locals': local_changes} if local_changes else {})
+                    }) + '\n')
 
-                    input(message) if interactive else print(message)
+            print(f"{f' {event} ':*^50}\n")
+            
+            if event == 'call':
+                message = f"calling {target}\n"
+                input(message) if interactive else print(message)
+                return trace_function
+            
+            elif event == 'line':
+                message = json_pretty({
+                    'filename': filename,
+                    **({'function': function_name} if function_name else {}),
+                    f'line {{{frame.f_lineno}}}': getline(code_filepath, frame.f_lineno).strip()
+                }) + '\n'
+                input(message) if interactive else print(message)
 
-                case 'return':
-                    print(f"{target} returned {arg}\n")
+            elif event == 'return':
+                print(f"{target} returned {arg}\n")
 
         sys.settrace(trace_function)
         runpy.run_path(debug_script_path)
