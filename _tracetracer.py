@@ -51,7 +51,20 @@ def diff_scope(old_scope: dict, new_scope: dict) -> dict:
 def main(debug_script_path: Path, output_file: Path) -> None:
     paths_to_trace = {str(file) for file in find_python_imports(debug_script_path)}
 
-    buffer = io.StringIO()
+    interactive = input('step through? ')
+    
+    if interactive:
+        def log_step(data: str):
+            print(data)
+        def print_step(data: str):
+            input(data)
+    else:
+        buffer = io.StringIO()
+        def log_step(data: str):
+            buffer.write(data)
+        def print_step(data: str):
+            buffer.write(data)
+    
     last_scopes = defaultdict(dict)
         
     def trace_function(frame, event, arg):
@@ -82,7 +95,7 @@ def main(debug_script_path: Path, output_file: Path) -> None:
             local_changes = diff_scope(old_locals, current_locals) if function_name else {}
                 
             if global_changes or local_changes:
-                buffer.write(json_pretty({
+                log_step(json_pretty({
                     'filename': filename,
                     **({'function': function_name} if function_name else {}),
                     **({'globals': global_changes} if global_changes else {}),
@@ -91,10 +104,10 @@ def main(debug_script_path: Path, output_file: Path) -> None:
                 
             last_scopes[code_filepath][function_name] = (current_globals, current_locals)
 
-        buffer.write(f"{f' {event} ':-^50}\n")
+        log_step(f"{f' {event} ':-^50}\n")
             
         if event == 'line':
-            buffer.write(json_pretty({
+            print_step(json_pretty({
                 'filename': filename,
                 **({'function': function_name} if function_name else {}),
                 'line': frame.f_lineno,
@@ -103,30 +116,32 @@ def main(debug_script_path: Path, output_file: Path) -> None:
             return
             
         elif event == 'call':
-            buffer.write(f"calling {target}\n")
+            print_step(f"calling {target}\n")
             if not last_scopes[code_filepath].get(function_name, None):
                 last_scopes[code_filepath][function_name] = (current_globals, current_locals)
                 if current_locals:
-                    buffer.write(json_pretty(current_locals) + '\n')
+                    log_step(json_pretty(current_locals) + '\n')
             return trace_function
 
         elif event == 'return':
-            buffer.write(f"{target} returned {arg}\n")
+            log_step(f"{target} returned {arg}\n")
             del last_scopes[code_filepath][function_name]
             return
 
         elif event == 'exception':
             exc_type, exc_value, exc_traceback = arg
-            buffer.write(f"{exc_type.__name__}: {exc_value}\n")
-            buffer.write(''.join(format_tb(exc_traceback)))
+            log_step(f"{exc_type.__name__}: {exc_value}\n")
+            log_step(''.join(format_tb(exc_traceback)))
             return
 
     with apply_dir(debug_script_path.parent), apply_trace(trace_function):
         runpy.run_path(debug_script_path)
 
     last_scopes.clear()
-    output_file.write_bytes(buffer.getvalue().encode('utf-8'))
-    buffer.close()
+    
+    if not interactive:
+        output_file.write_bytes(buffer.getvalue().encode('utf-8'))
+        buffer.close()
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
