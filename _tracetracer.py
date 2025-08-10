@@ -63,30 +63,31 @@ def trace_function(frame, event, arg):
         target = code_name
         function_name = None if code_name.startswith('<') else code_name
     
-    if event in ('line', 'return'):
-        frame_id = id(frame)
-        
-        cur_globals = filter_scope(frame.f_globals)
-        cur_locals = filter_scope(frame.f_locals) if function_name else {}
-        
-        old_globals, old_locals = last_scopes.get(frame_id, ({}, {}))
-        
-        global_changes = diff_scope(old_globals, cur_globals)
-        local_changes = diff_scope(old_locals, cur_locals) if function_name else {}
-        
-        last_scopes[frame_id] = (cur_globals, cur_locals)
-        
-        if global_changes or local_changes:
-            debug_scope_changes = json.dumps(
-                {
-                    **({'new globals': global_changes} if global_changes else {}),
-                    **({'new locals': local_changes} if local_changes else {})
-                },
-                indent=4,
-                default=lambda obj: f"<{type(obj).__name__}>"
-            ) + '\n'
+    match event:
+        case 'line' | 'return':
+            cur_globals = filter_scope(frame.f_globals)
+            cur_locals = filter_scope(frame.f_locals) if function_name else {}
 
-            print(debug_scope_changes)
+            old_globals, old_locals = last_scopes.get(code_filepath, ({}, {}))
+
+            global_changes = diff_scope(old_globals, cur_globals)
+            local_changes = diff_scope(old_locals, cur_locals) if function_name else {}
+
+            last_scopes[code_filepath] = (cur_globals, cur_locals)
+
+            if global_changes or local_changes:
+                debug_scope_changes = json.dumps(
+                    {
+                        'filename': filename,
+                        **({'function': function_name} if function_name else {}),
+                        **({'new globals': global_changes} if global_changes else {}),
+                        **({'new locals': local_changes} if local_changes else {})
+                    },
+                    indent=4,
+                    default=lambda obj: f"<{type(obj).__name__}>"
+                ) + '\n'
+
+                print(debug_scope_changes)
     
     print(f"{f' {event} ':*^50}\n")
     
@@ -113,7 +114,8 @@ def trace_function(frame, event, arg):
 
         case 'return':
             print(f"{target} returned {arg}\n")
-            last_scopes.pop(frame_id, None)
+            if code_name == '<module>':
+                last_scopes.pop(code_filepath, None)
 
 try:
     sys.settrace(trace_function)

@@ -10,6 +10,7 @@ calling test_script.py
 }
 
 {
+    "filename": "test_script.py",
     "new globals": {
         "x": 5
     }
@@ -23,6 +24,7 @@ calling test_script.py
 }
 
 {
+    "filename": "test_script.py",
     "new globals": {
         "y": 10
     }
@@ -36,6 +38,7 @@ calling test_script.py
 }
 
 {
+    "filename": "test_script.py",
     "new globals": {
         "adD": "<function>"
     }
@@ -53,11 +56,8 @@ calling test_script.py
 calling adD
 
 {
-    "new globals": {
-        "x": 5,
-        "y": 10,
-        "adD": "<function>"
-    },
+    "filename": "test_script.py",
+    "function": "adD",
     "new locals": {
         "a": 5,
         "b": 10
@@ -73,6 +73,8 @@ calling adD
 }
 
 {
+    "filename": "test_script.py",
+    "function": "adD",
     "new locals": {
         "tqeww": 1
     }
@@ -91,6 +93,7 @@ calling adD
 adD returned 15
 
 {
+    "filename": "test_script.py",
     "new globals": {
         "z": 15
     }
@@ -111,6 +114,7 @@ adD returned 15
 }
 
 {
+    "filename": "test_script.py",
     "new globals": {
         "i": 0
     }
