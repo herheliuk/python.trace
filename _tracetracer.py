@@ -35,6 +35,17 @@ if not interactive:
 def filter_scope(scope):
     return {key: value for key, value in scope.items() if not key.startswith("__")}
 
+def diff_scope(old, new):
+    changes = {}
+    for key, value in new.items():
+        if key not in old or old[key] != value:
+            changes[key] = value
+    for key in old.keys() - new.keys():
+        changes[key] = "<deleted>"
+    return changes
+
+last_scopes = {}
+
 def trace_function(frame, event, arg):
     code_frame = frame.f_code
     code_filepath = code_frame.co_filename
@@ -52,30 +63,57 @@ def trace_function(frame, event, arg):
         target = code_name
         function_name = None if code_name.startswith('<') else code_name
     
+    if event in ('line', 'return'):
+        frame_id = id(frame)
+        
+        cur_globals = filter_scope(frame.f_globals)
+        cur_locals = filter_scope(frame.f_locals) if function_name else {}
+        
+        old_globals, old_locals = last_scopes.get(frame_id, ({}, {}))
+        
+        global_changes = diff_scope(old_globals, cur_globals)
+        local_changes = diff_scope(old_locals, cur_locals) if function_name else {}
+        
+        last_scopes[frame_id] = (cur_globals, cur_locals)
+        
+        if global_changes or local_changes:
+            debug_scope_changes = json.dumps(
+                {
+                    **({'new globals': global_changes} if global_changes else {}),
+                    **({'new locals': local_changes} if local_changes else {})
+                },
+                indent=4,
+                default=lambda obj: f"<{type(obj).__name__}>"
+            ) + '\n'
+
+            print(debug_scope_changes)
+    
+    print(f"{f' {event} ':*^50}\n")
+    
     match event:
         case 'call':
-            print(f"calling {target}\n")
+            debug_data = f"calling {target}\n"
+            input(debug_data) if interactive else print(debug_data)
             return trace_function
 
         case 'line':
             line_number = frame.f_lineno
+            
             debug_data = json.dumps(
                 {
                     'filename': filename,
-                    f'line {{{line_number}}}': linecache.getline(code_filepath, line_number).strip(),
-                    'globals': filter_scope(frame.f_globals),
-                    **({
-                        'function': function_name,
-                        'locals': filter_scope(frame.f_locals)
-                    } if function_name else {})
+                    **({'function': function_name} if function_name else {}),
+                    f'line {{{line_number}}}': linecache.getline(code_filepath, line_number).strip()
                 },
-                indent = 4,
-                default = lambda obj: f"<{type(obj).__name__}>"
+                indent=4,
+                default=lambda obj: f"<{type(obj).__name__}>"
             ) + '\n'
+            
             input(debug_data) if interactive else print(debug_data)
-        
+
         case 'return':
             print(f"{target} returned {arg}\n")
+            last_scopes.pop(frame_id, None)
 
 try:
     sys.settrace(trace_function)

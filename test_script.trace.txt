@@ -1,131 +1,144 @@
+********************** call **********************
+
 calling test_script.py
+
+********************** line **********************
 
 {
     "filename": "test_script.py",
-    "line {3}": "x = 5",
-    "globals": {}
+    "line {3}": "x = 5"
 }
 
 {
-    "filename": "test_script.py",
-    "line {4}": "y = 10",
-    "globals": {
+    "new globals": {
         "x": 5
     }
 }
 
+********************** line **********************
+
 {
     "filename": "test_script.py",
-    "line {6}": "def adD(a, b): #comm",
-    "globals": {
-        "x": 5,
+    "line {4}": "y = 10"
+}
+
+{
+    "new globals": {
         "y": 10
     }
 }
 
+********************** line **********************
+
 {
     "filename": "test_script.py",
-    "line {10}": "z = adD(x, y)",
-    "globals": {
-        "x": 5,
-        "y": 10,
+    "line {6}": "def adD(a, b): #comm"
+}
+
+{
+    "new globals": {
         "adD": "<function>"
     }
 }
 
-calling adD
+********************** line **********************
 
 {
     "filename": "test_script.py",
-    "line {7}": "tqeww = 1",
-    "globals": {
+    "line {10}": "z = adD(x, y)"
+}
+
+********************** call **********************
+
+calling adD
+
+{
+    "new globals": {
         "x": 5,
         "y": 10,
         "adD": "<function>"
     },
-    "function": "adD",
-    "locals": {
+    "new locals": {
         "a": 5,
         "b": 10
     }
 }
 
+********************** line **********************
+
 {
     "filename": "test_script.py",
-    "line {8}": "return a + b",
-    "globals": {
-        "x": 5,
-        "y": 10,
-        "adD": "<function>"
-    },
     "function": "adD",
-    "locals": {
-        "a": 5,
-        "b": 10,
+    "line {7}": "tqeww = 1"
+}
+
+{
+    "new locals": {
         "tqeww": 1
     }
 }
 
+********************** line **********************
+
+{
+    "filename": "test_script.py",
+    "function": "adD",
+    "line {8}": "return a + b"
+}
+
+********************* return *********************
+
 adD returned 15
 
 {
-    "filename": "test_script.py",
-    "line {11}": "f\"z = {z}\" #comm",
-    "globals": {
-        "x": 5,
-        "y": 10,
-        "adD": "<function>",
+    "new globals": {
         "z": 15
     }
 }
 
-{
-    "filename": "test_script.py",
-    "line {13}": "for i in range(1):",
-    "globals": {
-        "x": 5,
-        "y": 10,
-        "adD": "<function>",
-        "z": 15
-    }
-}
+********************** line **********************
 
 {
     "filename": "test_script.py",
-    "line {14}": "z += i",
-    "globals": {
-        "x": 5,
-        "y": 10,
-        "adD": "<function>",
-        "z": 15,
+    "line {11}": "f\"z = {z}\" #comm"
+}
+
+********************** line **********************
+
+{
+    "filename": "test_script.py",
+    "line {13}": "for i in range(1):"
+}
+
+{
+    "new globals": {
         "i": 0
     }
 }
 
-{
-    "filename": "test_script.py",
-    "line {13}": "for i in range(1):",
-    "globals": {
-        "x": 5,
-        "y": 10,
-        "adD": "<function>",
-        "z": 15,
-        "i": 0
-    }
-}
+********************** line **********************
 
 {
     "filename": "test_script.py",
-    "line {16}": "print(z)",
-    "globals": {
-        "x": 5,
-        "y": 10,
-        "adD": "<function>",
-        "z": 15,
-        "i": 0
-    }
+    "line {14}": "z += i"
+}
+
+********************** line **********************
+
+{
+    "filename": "test_script.py",
+    "line {13}": "for i in range(1):"
+}
+
+********************** line **********************
+
+{
+    "filename": "test_script.py",
+    "line {16}": "print(z)"
 }
 
 15
+********************* return *********************
+
 test_script.py returned None
 
