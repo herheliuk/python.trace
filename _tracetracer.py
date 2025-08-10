@@ -48,22 +48,23 @@ def diff_scope(old_scope: dict, new_scope: dict) -> dict:
     deleted = {key: "<deleted>" for key in old_scope.keys() - new_scope.keys()}
     return {**changes, **deleted}
 
-def main(debug_script_path: Path, output_file: Path) -> None:
+def main(debug_script_path: Path, output_file: Path, interactive = None) -> None:
     paths_to_trace = {str(file) for file in find_python_imports(debug_script_path)}
-
-    interactive = input('step through? ')
     
     if interactive:
-        def log_step(data: str):
-            print(data)
-        def print_step(data: str):
-            input(data)
+        def log_step(text):
+            print(text)
+            
+        def print_step(text):
+            input(text)
     else:
         buffer = io.StringIO()
-        def log_step(data: str):
-            buffer.write(data)
-        def print_step(data: str):
-            buffer.write(data)
+        
+        def log_step(text):
+            buffer.write(text)
+            
+        def print_step(text):
+            buffer.write(text)
     
     last_scopes = defaultdict(dict)
         
@@ -140,7 +141,7 @@ def main(debug_script_path: Path, output_file: Path) -> None:
     last_scopes.clear()
     
     if not interactive:
-        output_file.write_bytes(buffer.getvalue().encode('utf-8'))
+        output_file.write_bytes(buffer.getvalue().encode("utf-8"))
         buffer.close()
 
 if __name__ == '__main__':
@@ -153,7 +154,9 @@ if __name__ == '__main__':
     if not debug_script_path.exists():
         print(f'Error: File "{debug_script_path.name}" does not exist.')
         sys.exit(1)
+        
+    interactive = input('step through? ')
     
     output_file = Path.cwd() / (debug_script_path.stem + '.trace.txt')
         
-    main(debug_script_path, output_file)
+    main(debug_script_path, output_file, interactive)
