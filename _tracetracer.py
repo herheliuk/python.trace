@@ -61,10 +61,10 @@ def main(debug_script_path: Path, output_file: Path, interactive = None) -> None
         buffer = io.StringIO()
         
         def log_step(text):
-            buffer.write(text)
+            buffer.write(text + '\n')
             
         def print_step(text):
-            buffer.write(text)
+            buffer.write(text + '\n')
     
     last_scopes = defaultdict(dict)
         
@@ -101,37 +101,37 @@ def main(debug_script_path: Path, output_file: Path, interactive = None) -> None
                     **({'function': function_name} if function_name else {}),
                     **({'globals': global_changes} if global_changes else {}),
                     **({'locals': local_changes} if local_changes else {})
-                }) + '\n')
+                }))
                 
             last_scopes[code_filepath][function_name] = (current_globals, current_locals)
 
-        log_step(f"{f' {event} ':-^50}\n")
-            
+        log_step(f"{f' {event} ':-^50}")
+        
         if event == 'line':
             print_step(json_pretty({
                 'filename': filename,
                 **({'function': function_name} if function_name else {}),
                 'line': frame.f_lineno,
                 'code': getline(code_filepath, frame.f_lineno).strip()
-            }) + '\n')
+            }))
             return
             
         elif event == 'call':
-            print_step(f"calling {target}\n")
+            print_step(f"calling {target}")
             if not last_scopes[code_filepath].get(function_name, None):
                 last_scopes[code_filepath][function_name] = (current_globals, current_locals)
                 if current_locals:
-                    log_step(json_pretty(current_locals) + '\n')
+                    log_step(json_pretty(current_locals))
             return trace_function
 
         elif event == 'return':
-            log_step(f"{target} returned {arg}\n")
+            log_step(f"{target} returned {arg}")
             del last_scopes[code_filepath][function_name]
             return
 
         elif event == 'exception':
             exc_type, exc_value, exc_traceback = arg
-            log_step(f"{exc_type.__name__}: {exc_value}\n")
+            log_step(f"{exc_type.__name__}: {exc_value}")
             log_step(''.join(format_tb(exc_traceback)))
             return
 
