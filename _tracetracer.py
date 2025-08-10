@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
+from ast_functions import find_python_imports
+
 import os, sys, runpy, json, io
-from linecache import getline
+from linecache import getlines
 from pathlib import Path
 from contextlib import contextmanager
 from functools import partial
 from collections import defaultdict
 from traceback import format_tb
-
-from ast_functions import find_python_imports
 
 @contextmanager
 def apply_dir(target_dir: Path):
@@ -50,6 +50,7 @@ def diff_scope(old_scope: dict, new_scope: dict) -> dict:
 
 def main(debug_script_path: Path, output_file: Path, interactive = None) -> None:
     paths_to_trace = {str(file) for file in find_python_imports(debug_script_path)}
+    source_cache = {path: getlines(path) for path in paths_to_trace}
     
     if interactive:
         def print_step(text):
@@ -112,7 +113,7 @@ def main(debug_script_path: Path, output_file: Path, interactive = None) -> None
                 'filename': filename,
                 **({'function': function_name} if function_name else {}),
                 'line': frame.f_lineno,
-                'code': getline(code_filepath, frame.f_lineno).strip()
+                'code': source_cache[code_filepath][frame.f_lineno - 1].strip()
             }))
             return
             
@@ -155,7 +156,7 @@ if __name__ == '__main__':
         print(f'Error: File "{debug_script_path.name}" does not exist.')
         sys.exit(1)
         
-    interactive = input('step through? ')
+    interactive = input('Step through? ')
     
     output_file = Path.cwd() / (debug_script_path.stem + '.trace.txt')
         
