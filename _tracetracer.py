@@ -101,6 +101,7 @@ def main(debug_script_path):
 
             elif event == 'return':
                 print(f"{target} returned {arg}\n")
+                del last_scopes[code_filepath][function_name]
 
         sys.settrace(trace_function)
         runpy.run_path(debug_script_path)
