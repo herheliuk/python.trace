@@ -15,3 +15,8 @@ for i in range(1):
     z += i
 
 print(z)
+
+hey = {
+    '1': 1,
+    2: f'{2}'
+}

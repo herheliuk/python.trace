@@ -127,5 +127,32 @@ adD returned 15
     "line": 17,
     "code": "print(z)"
 }
+---------------------- line ----------------------
+{
+    "filename": "test_script.py",
+    "line": 20,
+    "code": "_    '1': 1,"
+}
+---------------------- line ----------------------
+{
+    "filename": "test_script.py",
+    "line": 21,
+    "code": "_    2: f'{2}'"
+}
+---------------------- line ----------------------
+{
+    "filename": "test_script.py",
+    "line": 19,
+    "code": "hey = {\n    '1': 1,\n    2: f'{2}'\n}"
+}
+{
+    "filename": "test_script.py",
+    "globals": {
+        "hey": {
+            "1": 1,
+            "2": "2"
+        }
+    }
+}
 --------------------- return ---------------------
 test_script.py returned None
