@@ -57,4 +57,18 @@ Module(
             value=Call(
                 func=Name(id='print', ctx=Load()),
                 args=[
-                    Name(id='z', ctx=Load())]))])
+                    Name(id='z', ctx=Load())])),
+        Assign(
+            targets=[
+                Name(id='hey', ctx=Store())],
+            value=Dict(
+                keys=[
+                    Constant(value='1'),
+                    Constant(value=2)],
+                values=[
+                    Constant(value=1),
+                    JoinedStr(
+                        values=[
+                            FormattedValue(
+                                value=Constant(value=2),
+                                conversion=-1)])]))])

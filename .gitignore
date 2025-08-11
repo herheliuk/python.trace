@@ -8,3 +8,4 @@ env/
 backend.trace.txt
 backend.ast.txt
 frontend.trace.txt
+frontend.ast.txt

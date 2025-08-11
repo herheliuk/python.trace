@@ -1,4 +1,7 @@
 script_output = listen(sys.stdout)
+script_output.on_change = (
+    ...
+)
 
 input if interactive else print(debug_object)
 
