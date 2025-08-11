@@ -34,6 +34,6 @@ def get_source_code_cache(script_path: Path):
         if lineno in stmt_lines:
             source_code_cache[lineno] = stmt_lines[lineno]
         else:
-            source_code_cache[lineno] = "_" + line
+            source_code_cache[lineno] = "?" + line
     
     return source_code_cache

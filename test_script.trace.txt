@@ -131,13 +131,13 @@ adD returned 15
 {
     "filename": "test_script.py",
     "line": 20,
-    "code": "_    '1': 1,"
+    "code": "?    '1': 1,"
 }
 ---------------------- line ----------------------
 {
     "filename": "test_script.py",
     "line": 21,
-    "code": "_    2: f'{2}'"
+    "code": "?    2: f'{2}'"
 }
 ---------------------- line ----------------------
 {
