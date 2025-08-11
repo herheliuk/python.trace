@@ -39,18 +39,18 @@ def default_json_handler(obj):
 
 json_pretty = partial(json.dumps, indent=4, default=default_json_handler)
 
-def filter_scope(scope: dict) -> dict:
+def filter_scope(scope):
     startswith = str.startswith
     return {key: value for key, value in scope.items() if not startswith(key, "__")}
 
-def diff_scope(old_scope: dict, new_scope: dict) -> dict:
+def diff_scope(old_scope: dict, new_scope: dict):
     if old_scope is new_scope:
         return {}
     changes = {key: value for key, value in new_scope.items() if old_scope.get(key) != value}
     deleted = {key: "<deleted>" for key in old_scope.keys() - new_scope.keys()}
     return {**changes, **deleted}
 
-def main(debug_script_path: Path, output_file: Path, interactive = None) -> None:
+def main(debug_script_path: Path, output_file: Path, interactive = None):
     paths_to_trace = {str(file) for file in find_python_imports(debug_script_path)}
     source_cache = {path: getlines(path) for path in paths_to_trace}
     
@@ -72,41 +72,45 @@ def main(debug_script_path: Path, output_file: Path, interactive = None) -> None
     last_scopes = defaultdict(dict)
         
     def trace_function(frame, event, arg):
-        code_frame = frame.f_code
-        code_filepath = code_frame.co_filename
-
+        code_filepath = frame.f_code.co_filename
         if code_filepath not in paths_to_trace:
             return
 
-        code_name = code_frame.co_name
+        code_name = frame.f_code.co_name
         filename = Path(code_filepath).name
+        
+        is_not_module = code_name != '<module>'
 
-        if code_name == '<module>':
-            target = filename
-            function_name = None
-            current_locals = {}
-        else:
+        if is_not_module:
             target = code_name
             function_name = None if code_name.startswith('<') else code_name
             current_locals = dict(frame.f_locals)
+        else:
+            target = filename
+            function_name = None
+            current_locals = {}
             
         current_globals = dict(frame.f_globals)
+        
+        file_scopes = last_scopes[code_filepath]
             
         if event in ('line', 'return'):
-            old_globals, old_locals = last_scopes[code_filepath][function_name]
-                
+            old_globals, old_locals = file_scopes.get(function_name, ({}, {}))
+            
             global_changes = diff_scope(old_globals, current_globals)
-            local_changes = diff_scope(old_locals, current_locals) if function_name else {}
-                
+            local_changes = diff_scope(old_locals, current_locals) if is_not_module else {}
+            
             if global_changes or local_changes:
-                print_step(json_pretty({
-                    'filename': filename,
-                    **({'function': function_name} if function_name else {}),
-                    **({'globals': global_changes} if global_changes else {}),
-                    **({'locals': local_changes} if local_changes else {})
-                }))
+                payload = {'filename': filename}
+                if function_name:
+                    payload['function'] = function_name
+                if global_changes:
+                    payload['globals'] = global_changes
+                if local_changes:
+                    payload['locals'] = local_changes
+                print_step(json_pretty(payload))
                 
-            last_scopes[code_filepath][function_name] = (current_globals, current_locals)
+            file_scopes[function_name] = (current_globals, current_locals)
 
         print_step(f"{f' {event} ':-^50}")
         
@@ -121,15 +125,14 @@ def main(debug_script_path: Path, output_file: Path, interactive = None) -> None
             
         elif event == 'call':
             input_step(f"calling {target}")
-            if not last_scopes[code_filepath].get(function_name, None):
-                last_scopes[code_filepath][function_name] = (current_globals, current_locals)
-                if current_locals:
-                    print_step(json_pretty(current_locals))
+            file_scopes.setdefault(function_name, (current_globals, current_locals))
+            if current_locals:
+                print_step(json_pretty(current_locals))
             return trace_function
 
         elif event == 'return':
             print_step(f"{target} returned {arg}")
-            del last_scopes[code_filepath][function_name]
+            file_scopes.pop(function_name, None)
             return
 
         elif event == 'exception':
