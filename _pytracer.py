@@ -10,13 +10,13 @@ from collections import defaultdict
 from functools import partial
 from traceback import format_tb
 
-def default_json_handler(obj):
+def default_json_handler(obj: object):
     typename = type(obj).__name__
     return f"<{typename}>"
 
 json_pretty = partial(json.dumps, indent=4, default=default_json_handler)
 
-def filter_scope(scope):
+def filter_scope(scope: dict):
     startswith = str.startswith
     return {key: value for key, value in scope.items() if not startswith(key, "__")}
 
