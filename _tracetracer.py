@@ -155,7 +155,10 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
                 return
 
         with apply_dir(debug_script_path.parent), apply_trace(trace_function):
-            runpy.run_path(debug_script_path)
+            try:
+                runpy.run_path(debug_script_path)
+            except KeyboardInterrupt:
+                sys.exit(1)
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
