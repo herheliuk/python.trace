@@ -5,23 +5,30 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     return 1
 fi
 
+TARGET_DIR="${1:-$(pwd)}"
+
+if [[ ! -d "$TARGET_DIR" ]]; then
+    echo "Error: Target directory '$TARGET_DIR' does not exist."
+    return 1
+fi
+
 if [[ "$(uname)" != "Darwin" ]] && ! python3 -m venv --help &>/dev/null; then
     echo "Installing python3-venv..."
     sudo apt update && sudo apt install -y python3-venv
 fi
 
-if [[ ! -d env ]]; then
-    echo "Creating virtual environment..."
-    python3 -m venv env
+if [[ ! -d "$TARGET_DIR/env" ]]; then
+    echo "Creating virtual environment in $TARGET_DIR/env ..."
+    python3 -m venv "$TARGET_DIR/env"
 fi
 
 if [[ -z "$VIRTUAL_ENV" ]]; then
-    echo "Activating virtual environment..."
-    source env/bin/activate
+    echo "Activating virtual environment from $TARGET_DIR/env ..."
+    source "$TARGET_DIR/env/bin/activate"
 fi
 
-if [[ -f requirements.txt ]]; then
-    echo "Installing requirements..."
+if [[ -f "$TARGET_DIR/requirements.txt" ]]; then
+    echo "Installing requirements from $TARGET_DIR/requirements.txt ..."
     pip install --upgrade pip
-    pip install -r requirements.txt
+    pip install -r "$TARGET_DIR/requirements.txt"
 fi
