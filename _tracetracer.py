@@ -46,6 +46,7 @@ def step_io(output_file: Path, interactive: bool):
             pass
     else:
         buffer = io.StringIO()
+        
         def print_step(text):
             buffer.write(text + '\n')
             
@@ -81,10 +82,9 @@ def diff_scope(old_scope: dict, new_scope: dict):
 def main(debug_script_path: Path, output_file: Path, interactive = None):
     paths_to_trace = {str(file) for file in find_python_imports(debug_script_path)}
     source_cache = {path: getlines(path) for path in paths_to_trace}
+    last_files = defaultdict(dict)
     
     with step_io(output_file, interactive) as (print_step, input_step):
-        last_files = defaultdict(dict)
-
         def trace_function(frame, event, arg):
             code_filepath = frame.f_code.co_filename
             if code_filepath not in paths_to_trace:
