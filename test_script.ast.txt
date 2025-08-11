@@ -19,6 +19,9 @@ Module(
                     targets=[
                         Name(id='tqeww', ctx=Store())],
                     value=Constant(value=1)),
+                Delete(
+                    targets=[
+                        Name(id='tqeww', ctx=Del())]),
                 Return(
                     value=BinOp(
                         left=Name(id='a', ctx=Load()),

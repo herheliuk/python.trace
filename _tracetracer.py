@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
-from ast_functions import find_python_imports
+from ast_functions import find_python_imports, get_source_code_cache
 
 import os, sys, runpy, json, io
-from linecache import getlines
 from pathlib import Path
 from contextlib import contextmanager
 from functools import partial
@@ -80,14 +79,17 @@ def diff_scope(old_scope: dict, new_scope: dict):
     return {**changes, **deleted}
 
 def main(debug_script_path: Path, output_file: Path, interactive = None):
-    paths_to_trace = {str(file) for file in find_python_imports(debug_script_path)}
-    source_cache = {path: getlines(path) for path in paths_to_trace}
+    paths_to_trace = find_python_imports(debug_script_path)
+    str_paths_to_trace = {str(path) for path in paths_to_trace}
+
+    source_code_cache = {str(path): get_source_code_cache(path) for path in paths_to_trace}
+    
     last_files = defaultdict(dict)
     
     with step_io(output_file, interactive) as (print_step, input_step):
         def trace_function(frame, event, arg):
             code_filepath = frame.f_code.co_filename
-            if code_filepath not in paths_to_trace:
+            if code_filepath not in str_paths_to_trace:
                 return
 
             code_name = frame.f_code.co_name
@@ -131,7 +133,7 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
                     'filename': filename,
                     **({'function': function_name} if function_name else {}),
                     'line': frame.f_lineno,
-                    'code': source_cache[code_filepath][frame.f_lineno - 1].strip()
+                    'code': source_code_cache[code_filepath][frame.f_lineno]
                 }))
                 last_functions[function_name] = (current_globals, current_locals)
                 return

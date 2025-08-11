@@ -28,7 +28,7 @@ calling test_script.py
 {
     "filename": "test_script.py",
     "line": 6,
-    "code": "def adD(a, b): #comm"
+    "code": "def adD(a, b): #comm\n    tqeww = 1\n    del tqeww\n    return a + b"
 }
 {
     "filename": "test_script.py",
@@ -95,13 +95,13 @@ adD returned 15
 {
     "filename": "test_script.py",
     "line": 12,
-    "code": "f\"z = {z}\" #comm"
+    "code": "f\"z = {z}\""
 }
 ---------------------- line ----------------------
 {
     "filename": "test_script.py",
     "line": 14,
-    "code": "for i in range(1):"
+    "code": "for i in range(1):\n    z += i"
 }
 {
     "filename": "test_script.py",
@@ -119,7 +119,7 @@ adD returned 15
 {
     "filename": "test_script.py",
     "line": 14,
-    "code": "for i in range(1):"
+    "code": "for i in range(1):\n    z += i"
 }
 ---------------------- line ----------------------
 {

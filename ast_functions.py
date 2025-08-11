@@ -1,13 +1,13 @@
-from pathlib import Path
 import ast
+from pathlib import Path
 
 def find_python_imports(script_path: Path) -> set[Path]:
     script_dir = script_path.parent
-    content = script_path.read_text()
-    tree = ast.parse(content)
+    source_code = script_path.read_text()
+    ast_tree = ast.parse(source_code)
     script_paths = {script_path}
 
-    for node in ast.walk(tree):
+    for node in ast.walk(ast_tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             base_name = node.module if isinstance(node, ast.ImportFrom) else None
             for alias in node.names:
@@ -17,3 +17,23 @@ def find_python_imports(script_path: Path) -> set[Path]:
                     script_paths.add(candidate)
 
     return script_paths
+
+def get_source_code_cache(script_path: Path):
+    source_code = script_path.read_text()
+    script_lines = source_code.splitlines()
+    ast_tree = ast.parse(source_code)
+    
+    stmt_lines = {}
+    for node in ast.walk(ast_tree):
+        if isinstance(node, (ast.stmt, ast.Dict)):
+            segment = ast.get_source_segment(source_code, node)
+            stmt_lines[node.lineno] = segment
+    
+    source_code_cache = {}
+    for lineno, line in enumerate(script_lines, start=1):
+        if lineno in stmt_lines:
+            source_code_cache[lineno] = stmt_lines[lineno]
+        else:
+            source_code_cache[lineno] = line
+    
+    return source_code_cache
