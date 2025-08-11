@@ -141,11 +141,12 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
             return
 
     with apply_dir(debug_script_path.parent), apply_trace(trace_function):
-        runpy.run_path(debug_script_path)
-    
-    if not interactive:
-        output_file.write_bytes(buffer.getvalue().encode("utf-8"))
-        buffer.close()
+        try:
+            runpy.run_path(debug_script_path)
+        finally:
+            if not interactive:
+                output_file.write_bytes(buffer.getvalue().encode("utf-8"))
+                buffer.close()
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
