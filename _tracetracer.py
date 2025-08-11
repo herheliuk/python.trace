@@ -69,7 +69,7 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
         def input_step(text):
             buffer.write(text + '\n')
     
-    last_scopes = defaultdict(dict)
+    last_files = defaultdict(dict)
         
     def trace_function(frame, event, arg):
         code_filepath = frame.f_code.co_filename
@@ -92,10 +92,10 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
             
         current_globals = dict(frame.f_globals)
         
-        file_scopes = last_scopes[code_filepath]
+        last_functions = last_files[code_filepath]
             
         if event in ('line', 'return'):
-            old_globals, old_locals = file_scopes.get(function_name, ({}, {}))
+            old_globals, old_locals = last_functions[function_name]
             
             global_changes = diff_scope(old_globals, current_globals)
             local_changes = diff_scope(old_locals, current_locals) if is_not_module else {}
@@ -109,8 +109,6 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
                 if local_changes:
                     payload['locals'] = local_changes
                 print_step(json_pretty(payload))
-                
-            file_scopes[function_name] = (current_globals, current_locals)
 
         print_step(f"{f' {event} ':-^50}")
         
@@ -121,18 +119,19 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
                 'line': frame.f_lineno,
                 'code': source_cache[code_filepath][frame.f_lineno - 1].strip()
             }))
+            last_functions[function_name] = (current_globals, current_locals)
             return
             
         elif event == 'call':
             input_step(f"calling {target}")
-            file_scopes.setdefault(function_name, (current_globals, current_locals))
             if current_locals:
                 print_step(json_pretty(current_locals))
+            last_functions.setdefault(function_name, (current_globals, current_locals))
             return trace_function
 
         elif event == 'return':
             print_step(f"{target} returned {arg}")
-            file_scopes.pop(function_name, None)
+            del last_functions[function_name]
             return
 
         elif event == 'exception':
@@ -143,8 +142,6 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
 
     with apply_dir(debug_script_path.parent), apply_trace(trace_function):
         runpy.run_path(debug_script_path)
-
-    last_scopes.clear()
     
     if not interactive:
         output_file.write_bytes(buffer.getvalue().encode("utf-8"))
