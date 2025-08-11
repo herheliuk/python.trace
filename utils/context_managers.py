@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
-import sys, os, io, json
+import sys, os, io
 
 from contextlib import contextmanager
 from pathlib import Path
-from functools import partial
 
 @contextmanager
 def apply_dir(target_dir: Path):

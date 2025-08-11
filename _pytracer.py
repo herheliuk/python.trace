@@ -2,6 +2,7 @@
 
 from utils.ast_functions import find_python_imports, get_source_code_cache
 from utils.context_managers import apply_dir, apply_trace, step_io
+from utils.scope_functions import diff_scope
 
 import sys, runpy, json
 
@@ -15,17 +16,6 @@ def default_json_handler(obj: object):
     return f"<{typename}>"
 
 json_pretty = partial(json.dumps, indent=4, default=default_json_handler)
-
-def filter_scope(scope: dict):
-    startswith = str.startswith
-    return {key: value for key, value in scope.items() if not startswith(key, "__")}
-
-def diff_scope(old_scope: dict, new_scope: dict):
-    if old_scope is new_scope:
-        return {}
-    changes = {key: value for key, value in new_scope.items() if old_scope.get(key) != value}
-    deleted = {key: "<deleted>" for key in old_scope.keys() - new_scope.keys()}
-    return {**changes, **deleted}
 
 def main(debug_script_path: Path, output_file: Path, interactive = None):
     paths_to_trace = find_python_imports(debug_script_path)
