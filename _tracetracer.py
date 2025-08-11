@@ -132,8 +132,8 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
                 input_step(json_pretty({
                     'filename': filename,
                     **({'function': function_name} if function_name else {}),
-                    'line': frame.f_lineno,
-                    'code': source_code_cache[code_filepath][frame.f_lineno]
+                    'lineno': frame.f_lineno,
+                    **(source_code_cache[code_filepath][frame.f_lineno])
                 }))
                 last_functions[function_name] = (current_globals, current_locals)
                 return

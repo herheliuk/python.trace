@@ -32,8 +32,8 @@ def get_source_code_cache(script_path: Path):
     source_code_cache = {}
     for lineno, line in enumerate(script_lines, start=1):
         if lineno in stmt_lines:
-            source_code_cache[lineno] = stmt_lines[lineno]
+            source_code_cache[lineno] = {'segment': stmt_lines[lineno]}
         else:
-            source_code_cache[lineno] = "?" + line
+            source_code_cache[lineno] = {'line': line}
     
     return source_code_cache

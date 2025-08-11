@@ -3,8 +3,8 @@ calling test_script.py
 ---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line": 3,
-    "code": "x = 5"
+    "lineno": 3,
+    "segment": "x = 5"
 }
 {
     "filename": "test_script.py",
@@ -15,8 +15,8 @@ calling test_script.py
 ---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line": 4,
-    "code": "y = 10"
+    "lineno": 4,
+    "segment": "y = 10"
 }
 {
     "filename": "test_script.py",
@@ -27,8 +27,8 @@ calling test_script.py
 ---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line": 6,
-    "code": "def adD(a, b): #comm\n    tqeww = 1\n    del tqeww\n    return a + b"
+    "lineno": 6,
+    "segment": "def adD(a, b): #comm\n    tqeww = 1\n    del tqeww\n    return a + b"
 }
 {
     "filename": "test_script.py",
@@ -39,8 +39,8 @@ calling test_script.py
 ---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line": 11,
-    "code": "z = adD(x, y)"
+    "lineno": 11,
+    "segment": "z = adD(x, y)"
 }
 ---------------------- call ----------------------
 calling adD
@@ -52,8 +52,8 @@ calling adD
 {
     "filename": "test_script.py",
     "function": "adD",
-    "line": 7,
-    "code": "tqeww = 1"
+    "lineno": 7,
+    "segment": "tqeww = 1"
 }
 {
     "filename": "test_script.py",
@@ -66,8 +66,8 @@ calling adD
 {
     "filename": "test_script.py",
     "function": "adD",
-    "line": 8,
-    "code": "del tqeww"
+    "lineno": 8,
+    "segment": "del tqeww"
 }
 {
     "filename": "test_script.py",
@@ -80,8 +80,8 @@ calling adD
 {
     "filename": "test_script.py",
     "function": "adD",
-    "line": 9,
-    "code": "return a + b"
+    "lineno": 9,
+    "segment": "return a + b"
 }
 --------------------- return ---------------------
 adD returned 15
@@ -94,14 +94,14 @@ adD returned 15
 ---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line": 12,
-    "code": "f\"z = {z}\""
+    "lineno": 12,
+    "segment": "f\"z = {z}\""
 }
 ---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line": 14,
-    "code": "for i in range(1):\n    z += i"
+    "lineno": 14,
+    "segment": "for i in range(1):\n    z += i"
 }
 {
     "filename": "test_script.py",
@@ -112,38 +112,38 @@ adD returned 15
 ---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line": 15,
-    "code": "z += i"
+    "lineno": 15,
+    "segment": "z += i"
 }
 ---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line": 14,
-    "code": "for i in range(1):\n    z += i"
+    "lineno": 14,
+    "segment": "for i in range(1):\n    z += i"
 }
 ---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line": 17,
-    "code": "print(z)"
+    "lineno": 17,
+    "segment": "print(z)"
 }
 ---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line": 20,
-    "code": "?    '1': 1,"
+    "lineno": 20,
+    "line": "    '1': 1,"
 }
 ---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line": 21,
-    "code": "?    2: f'{2}'"
+    "lineno": 21,
+    "line": "    2: f'{2}'"
 }
 ---------------------- line ----------------------
 {
     "filename": "test_script.py",
-    "line": 19,
-    "code": "hey = {\n    '1': 1,\n    2: f'{2}'\n}"
+    "lineno": 19,
+    "segment": "hey = {\n    '1': 1,\n    2: f'{2}'\n}"
 }
 {
     "filename": "test_script.py",
