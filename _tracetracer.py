@@ -158,7 +158,7 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
 
         with apply_dir(debug_script_path.parent), apply_trace(trace_function):
             try:
-                runpy.run_path(debug_script_path)
+                runpy.run_path(debug_script_path, run_name="__main__")
             except KeyboardInterrupt:
                 sys.exit(1)
 
