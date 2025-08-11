@@ -14,6 +14,8 @@ f"z = {z}" #comm
 for i in range(1):
     z += i
 
+hey = {'1': 1, 2: f'{2}'}
+
 print(z)
 
 hey = {

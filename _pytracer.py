@@ -11,9 +11,8 @@ from collections import defaultdict
 from functools import partial
 from traceback import format_tb
 
-def default_json_handler(obj: object):
-    typename = type(obj).__name__
-    return f"<{typename}>"
+def default_json_handler(obj):
+    return f"<{type(obj).__name__}>"
 
 json_pretty = partial(json.dumps, indent=4, default=default_json_handler)
 
@@ -28,8 +27,7 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
     with step_io(output_file, interactive) as (print_step, input_step):
         def trace_function(frame, event, arg):
             code_filepath = frame.f_code.co_filename
-            if code_filepath not in str_paths_to_trace:
-                return
+            if code_filepath not in str_paths_to_trace: return
 
             code_name = frame.f_code.co_name
             filename = Path(code_filepath).name
