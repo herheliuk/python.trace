@@ -25,7 +25,7 @@ def get_source_code_cache(script_path: Path):
     
     stmt_lines = {}
     for node in ast.walk(ast_tree):
-        if isinstance(node, (ast.stmt, ast.Dict)):
+        if isinstance(node, ast.stmt):
             segment = ast.get_source_segment(source_code, node)
             stmt_lines[node.lineno] = segment
     
@@ -34,6 +34,6 @@ def get_source_code_cache(script_path: Path):
         if lineno in stmt_lines:
             source_code_cache[lineno] = stmt_lines[lineno]
         else:
-            source_code_cache[lineno] = line
+            source_code_cache[lineno] = "_" + line
     
     return source_code_cache
