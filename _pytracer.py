@@ -2,7 +2,7 @@
 
 from utils.ast_functions import find_python_imports, get_source_code_cache
 from utils.context_managers import apply_dir, apply_trace, step_io
-from utils.scope_functions import diff_scope
+from utils.scope_functions import diff_scope, filter_scope
 
 import sys, json
 
