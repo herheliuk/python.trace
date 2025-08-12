@@ -8,3 +8,5 @@ input if interactive else print(debug_object)
 import ... from ... = from ... import ...
 
 from ast_functions import find_python_imports -> set[Path]
+
+with interactive = False:
