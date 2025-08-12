@@ -4,7 +4,7 @@ from utils.ast_functions import find_python_imports, get_source_code_cache
 from utils.context_managers import apply_dir, apply_trace, step_io
 from utils.scope_functions import diff_scope
 
-import sys, runpy, json
+import sys, json
 
 from pathlib import Path
 from collections import defaultdict
@@ -14,7 +14,7 @@ from traceback import format_tb
 def default_json_handler(obj):
     return f"<{type(obj).__name__}>"
 
-json_pretty = partial(json.dumps, indent=4, default=default_json_handler)
+pretty_json = partial(json.dumps, indent=4, default=default_json_handler)
 
 def main(debug_script_path: Path, output_file: Path, interactive = None):
     paths_to_trace = find_python_imports(debug_script_path)
@@ -61,12 +61,12 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
                         payload['globals'] = global_changes
                     if local_changes:
                         payload['locals'] = local_changes
-                    print_step(json_pretty(payload))
+                    print_step(pretty_json(payload))
 
             print_step(f"{f' {event} ':-^50}")
 
             if event == 'line':
-                input_step(json_pretty({
+                input_step(pretty_json({
                     'filename': filename,
                     **({'function': function_name} if function_name else {}),
                     'lineno': frame.f_lineno,
@@ -78,7 +78,7 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
             elif event == 'call':
                 input_step(f"calling {target}")
                 if current_locals:
-                    print_step(json_pretty(current_locals))
+                    print_step(pretty_json(current_locals))
                 last_functions.setdefault(function_name, (current_globals, current_locals))
                 return trace_function
 
@@ -92,10 +92,13 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
                 print_step(f"{exc_type.__name__}: {exc_value}")
                 print_step(''.join(format_tb(exc_traceback)))
                 return
+        
+        source_code = debug_script_path.read_text()
+        compiled_file = compile(source_code, filename=debug_script_path, mode='exec')
 
         with apply_dir(debug_script_path.parent), apply_trace(trace_function):
             try:
-                runpy.run_path(debug_script_path, run_name="__main__")
+                exec(compiled_file)
             except KeyboardInterrupt:
                 sys.exit(1)
 
