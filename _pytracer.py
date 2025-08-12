@@ -94,7 +94,7 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
                 return
         
         source_code = debug_script_path.read_text()
-        compiled_file = compile(source_code, filename=debug_script_path, mode='exec')
+        compiled_file = compile(source_code, filename=debug_script_path, mode='exec', dont_inherit=True)
 
         with apply_dir(debug_script_path.parent), apply_trace(trace_function):
             try:
