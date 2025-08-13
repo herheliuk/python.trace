@@ -99,7 +99,7 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
         
         with apply_dir(debug_script_path.parent), apply_trace(trace_function):
             try:
-                exec(compiled, globals={})
+                exec(compiled, globals={}, locals=None)
             except KeyboardInterrupt:
                 sys.exit(1)
 
