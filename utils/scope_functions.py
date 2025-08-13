@@ -9,3 +9,4 @@ def diff_scope(old_scope: dict, new_scope: dict):
         for key in old_scope.keys() | new_scope.keys()
         if old_scope.get(key) != new_scope.get(key)
     }
+
