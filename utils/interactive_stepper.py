@@ -3,19 +3,18 @@
 from sys import stdin, stdout, exit
 
 try:
-    from msvcrt import getch
+    from msvcrt import getch   # Windows
 except:
     from termios import tcgetattr, tcsetattr, TCSADRAIN
     from tty import setraw
     def getch():
-        fd = stdin.fileno()
-        old = tcgetattr(fd)
+        file_descriptor = stdin.fileno()
+        old_settings = tcgetattr(file_descriptor)
         try:
-            setraw(fd)
-            char = stdin.read(1)
-            return char.encode()
+            setraw(file_descriptor)
+            return stdin.read(1).encode()
         finally:
-            tcsetattr(fd, TCSADRAIN, old)
+            tcsetattr(file_descriptor, TCSADRAIN, old_settings)
 
 def await_command(prompt):
     stdout.write(prompt)
@@ -33,9 +32,9 @@ def await_command(prompt):
             # Enter
             case b"\r" | b"\n":
                 stdout.write("\n")
-                text = buffer.decode()
-                if text.isdigit():
-                    return 'jump', text
+                line = buffer.decode()
+                if line.isdigit():
+                    return 'jump', line
                 return 'next', None
 
             # Backspace
@@ -54,7 +53,7 @@ def await_command(prompt):
 
 if __name__ == '__main__':
     while True:
-        code, result = await_command("> ")
+        code, line = await_command("> ")
 
         match code:
             case 'next':
@@ -62,4 +61,4 @@ if __name__ == '__main__':
             case 'prev':
                 print("PREV LINE")
             case 'jump':
-                print(f"JUMP LINE {int(result)}")
+                print(f"JUMP LINE {line}")

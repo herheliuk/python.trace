@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from io import StringIO
 from sys import path, gettrace, settrace
 from os import chdir
 from contextlib import contextmanager
@@ -32,15 +31,18 @@ def apply_trace(trace_function):
 @contextmanager
 def step_io(output_file: Path, interactive: bool):    
     if interactive:
+        from utils.interactive_stepper import await_command
+        
         def print_step(text):
             print(text)
             
         def input_step(text):
-            return input(text)
+            code, line = await_command(text)
         
         def finalize():
             pass
     else:
+        from io import StringIO
         buffer = StringIO()
         
         def print_step(text):
