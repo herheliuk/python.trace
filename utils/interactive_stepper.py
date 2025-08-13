@@ -31,20 +31,25 @@ def await_command(prompt):
 
             # Enter
             case b"\r" | b"\n":
-                stdout.write("\n")
-                line = buffer.decode()
-                if line.isdigit():
-                    return 'jump', line
+                # Erasing typed-in data from the terminal
+                stdout.write("\b \b" * len(buffer))
+                stdout.flush()
+                
+                stdout.write('\n')
+                lineno = buffer.decode()
+                if lineno.isdigit():
+                    return 'jump', lineno
                 return 'next', None
 
             # Backspace
             case b"\x08" | b"\x7f":
-                if not buffer:
+                if not buffer:                    
                     stdout.write("\n")
                     return 'prev', None
-                buffer = buffer[:-1]
-                stdout.write("\b \b")
-                stdout.flush()
+                else:
+                    buffer = buffer[:-1]
+                    stdout.write("\b \b")
+                    stdout.flush()
 
             # Ctrl + C | ESC
             case b"\x03" | b"\x1b":
@@ -53,7 +58,7 @@ def await_command(prompt):
 
 if __name__ == '__main__':
     while True:
-        code, line = await_command("> ")
+        code, lineno = await_command("> ")
 
         match code:
             case 'next':
@@ -61,4 +66,4 @@ if __name__ == '__main__':
             case 'prev':
                 print("PREV LINE")
             case 'jump':
-                print(f"JUMP LINE {line}")
+                print(f"JUMP LINE {lineno}")

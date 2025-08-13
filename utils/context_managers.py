@@ -29,7 +29,7 @@ def apply_trace(trace_function):
         settrace(old_trace)
 
 @contextmanager
-def step_io(output_file: Path, interactive: bool):    
+def step_io(output_file: Path, interactive: bool, jump_line, prev_line):    
     if interactive:
         from utils.interactive_stepper import await_command
         
@@ -37,7 +37,15 @@ def step_io(output_file: Path, interactive: bool):
             print(text)
             
         def input_step(text):
-            code, line = await_command(text)
+            code, lineno = await_command(text)
+            
+            match code:
+                case 'next':
+                    return
+                case 'prev':
+                    prev_line()
+                case 'jump':
+                    jump_line(int(lineno))
         
         def finalize():
             pass
