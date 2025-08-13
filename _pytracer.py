@@ -28,7 +28,7 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
     def prev_line():
         ...
     
-    def jump_line(lineno: int):
+    def jump_line(lineno):
         ...
     
     with step_io(output_file, interactive, jump_line, prev_line) as (print_step, input_step):

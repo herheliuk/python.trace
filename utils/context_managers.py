@@ -45,7 +45,7 @@ def step_io(output_file: Path, interactive: bool, jump_line, prev_line):
                 case 'prev':
                     prev_line()
                 case 'jump':
-                    jump_line(int(lineno))
+                    jump_line(lineno)
         
         def finalize():
             pass
