@@ -1,3 +1,2 @@
 intercept prints
 precomile statements, exec them [comlile 'return' error!]
-FIX BUG: NO CHANGES PRINTED WHEN FUNCTION_NAME IS NONE
