@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
-import sys, os, io
-
+from io import StringIO
+from sys import path, gettrace, settrace
+from os import chdir
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -9,24 +10,24 @@ from pathlib import Path
 def apply_dir(target_dir: Path):
     original_dir = Path.cwd()
     target_dir = str(target_dir)
-    if target_dir not in sys.path:
-        sys.path.insert(0, target_dir)
-        os.chdir(target_dir)
+    if target_dir not in path:
+        path.insert(0, target_dir)
+        chdir(target_dir)
     try:
         yield
     finally:
-        if target_dir in sys.path:
-            sys.path.remove(target_dir)
-            os.chdir(original_dir)
+        if target_dir in path:
+            path.remove(target_dir)
+            chdir(original_dir)
     
 @contextmanager
 def apply_trace(trace_function):
-    old_trace = sys.gettrace()
-    sys.settrace(trace_function)
+    old_trace = gettrace()
+    settrace(trace_function)
     try:
         yield
     finally:
-        sys.settrace(old_trace)
+        settrace(old_trace)
 
 @contextmanager
 def step_io(output_file: Path, interactive: bool):    
@@ -40,7 +41,7 @@ def step_io(output_file: Path, interactive: bool):
         def finalize():
             pass
     else:
-        buffer = io.StringIO()
+        buffer = StringIO()
         
         def print_step(text):
             buffer.write(text + '\n')

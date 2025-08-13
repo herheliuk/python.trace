@@ -4,8 +4,8 @@ from utils.ast_functions import find_python_imports, get_source_code_cache
 from utils.context_managers import apply_dir, apply_trace, step_io
 from utils.scope_functions import diff_scope, filter_scope
 
-import sys, json
-
+from json import dumps
+from sys import argv, exit
 from pathlib import Path
 from collections import defaultdict
 from functools import partial
@@ -14,7 +14,7 @@ from traceback import format_tb
 def default_json_handler(obj):
     return f"<{type(obj).__name__}>"
 
-pretty_json = partial(json.dumps, indent=4, default=default_json_handler)
+pretty_json = partial(dumps, indent=4, default=default_json_handler)
 
 def main(debug_script_path: Path, output_file: Path, interactive = None):
     paths_to_trace = find_python_imports(debug_script_path)
@@ -101,18 +101,18 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
             try:
                 exec(compiled, globals={}, locals=None)
             except KeyboardInterrupt:
-                sys.exit(1)
+                exit(1)
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print(f'Usage: python {sys.argv[0]} <script to debug>')
-        sys.exit(1)
+    if len(argv) != 2:
+        print(f'Usage: python {argv[0]} <script to debug>')
+        exit(1)
 
-    debug_script_path = Path(sys.argv[1]).resolve()
+    debug_script_path = Path(argv[1]).resolve()
     
     if not debug_script_path.is_file():
         print(f'Error: File "{debug_script_path.name}" does not exist or is a directory.')
-        sys.exit(1)
+        exit(1)
         
     interactive = input('Step through? ')
     

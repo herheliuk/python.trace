@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 
-import ast
+from ast import parse, walk, Import, ImportFrom, stmt, get_source_segment
 from pathlib import Path
 
 def find_python_imports(script_path: Path) -> set[Path]:
     script_dir = script_path.parent
     source_code = script_path.read_text()
-    ast_tree = ast.parse(source_code, filename=script_path.name)
+    ast_tree = parse(source_code, filename=script_path.name)
     script_paths = {script_path}
 
-    for node in ast.walk(ast_tree):
-        if isinstance(node, (ast.Import, ast.ImportFrom)):
-            base_name = node.module if isinstance(node, ast.ImportFrom) else None
+    for node in walk(ast_tree):
+        if isinstance(node, (Import, ImportFrom)):
+            base_name = node.module if isinstance(node, ImportFrom) else None
             for alias in node.names:
                 name = base_name or alias.name
                 candidate = script_dir.joinpath(*name.split('.')).with_suffix('.py')
@@ -23,12 +23,12 @@ def find_python_imports(script_path: Path) -> set[Path]:
 def get_source_code_cache(script_path: Path):
     source_code = script_path.read_text()
     script_lines = source_code.splitlines()
-    ast_tree = ast.parse(source_code, filename=script_path.name)
+    ast_tree = parse(source_code, filename=script_path.name)
     
     stmt_lines = {}
-    for node in ast.walk(ast_tree):
-        if isinstance(node, ast.stmt):
-            segment = ast.get_source_segment(source_code, node)
+    for node in walk(ast_tree):
+        if isinstance(node, stmt):
+            segment = get_source_segment(source_code, node)
             stmt_lines[node.lineno] = segment
     
     source_code_cache = {}
