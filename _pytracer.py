@@ -109,9 +109,9 @@ if __name__ == '__main__':
         sys.exit(1)
 
     debug_script_path = Path(sys.argv[1]).resolve()
-
-    if not debug_script_path.exists():
-        print(f'Error: File "{debug_script_path.name}" does not exist.')
+    
+    if not debug_script_path.is_file():
+        print(f'Error: File "{debug_script_path.name}" does not exist or is a directory.')
         sys.exit(1)
         
     interactive = input('Step through? ')

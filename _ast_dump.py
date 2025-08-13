@@ -8,14 +8,14 @@ if __name__ == '__main__':
 
     script_path = Path(sys.argv[1]).resolve()
 
-    assert script_path.exists(), f'File "{script_path.name}" does not exist.'
+    assert script_path.is_file(), f'File "{script_path.name}" does not exist or is a directory.'
+    
+    output_file = Path.cwd() / (script_path.stem + '.ast.txt')
 
     source_code = script_path.read_text()
     
     ast_tree = ast.parse(source_code, filename=script_path.name)
     
     tree_dump = ast.dump(ast_tree, indent=4)
-
-    output_file = Path.cwd() / (script_path.stem + '.ast.txt')
 
     output_file.write_text(tree_dump)
