@@ -73,7 +73,7 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
                     'lineno': frame.f_lineno,
                     **(source_code_cache[str_code_filepath][frame.f_lineno])
                 }))
-                last_functions[function_name] = (current_globals, current_locals)
+                last_functions[function_name] = current_globals, current_locals
                 return
 
             elif event == 'call':
