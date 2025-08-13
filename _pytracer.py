@@ -10,7 +10,6 @@ from pathlib import Path
 from collections import defaultdict
 from functools import partial
 from traceback import format_tb
-from runpy import run_path
 
 def default_json_handler(obj):
     return f"<{type(obj).__name__}>"
@@ -95,9 +94,12 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
                 print_step(''.join(format_tb(exc_traceback)))
                 return
         
+        source_code = debug_script_path.read_text()
+        compiled = compile(source_code, debug_script_path, mode='exec', dont_inherit=True)
+        
         with apply_dir(debug_script_path.parent), apply_trace(trace_function):
             try:
-                run_path(debug_script_path, run_name="__main__")
+                exec(compiled, globals={})
             except KeyboardInterrupt:
                 sys.exit(1)
 

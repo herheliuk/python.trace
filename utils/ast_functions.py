@@ -6,7 +6,7 @@ from pathlib import Path
 def find_python_imports(script_path: Path) -> set[Path]:
     script_dir = script_path.parent
     source_code = script_path.read_text()
-    ast_tree = ast.parse(source_code)
+    ast_tree = ast.parse(source_code, filename=script_path.name)
     script_paths = {script_path}
 
     for node in ast.walk(ast_tree):
@@ -23,7 +23,7 @@ def find_python_imports(script_path: Path) -> set[Path]:
 def get_source_code_cache(script_path: Path):
     source_code = script_path.read_text()
     script_lines = source_code.splitlines()
-    ast_tree = ast.parse(source_code)
+    ast_tree = ast.parse(source_code, filename=script_path.name)
     
     stmt_lines = {}
     for node in ast.walk(ast_tree):

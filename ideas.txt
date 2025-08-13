@@ -10,3 +10,5 @@ import ... from ... = from ... import ...
 from ast_functions import find_python_imports -> set[Path]
 
 with interactive = False:
+
+globals, locals, temp = {} # each of them will = {}
