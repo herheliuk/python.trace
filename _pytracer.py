@@ -18,19 +18,20 @@ pretty_json = partial(json.dumps, indent=4, default=default_json_handler)
 
 def main(debug_script_path: Path, output_file: Path, interactive = None):
     paths_to_trace = find_python_imports(debug_script_path)
-    str_paths_to_trace = {str(path) for path in paths_to_trace}
-
+    
     source_code_cache = {str(path): get_source_code_cache(path) for path in paths_to_trace}
     
     last_files = defaultdict(dict)
     
+    str_paths_to_trace = {str(path) for path in paths_to_trace}
+    
     with step_io(output_file, interactive) as (print_step, input_step):
         def trace_function(frame, event, arg):
-            code_filepath = frame.f_code.co_filename
-            if code_filepath not in str_paths_to_trace: return
+            str_code_filepath = frame.f_code.co_filename
+            if str_code_filepath not in str_paths_to_trace: return
 
             code_name = frame.f_code.co_name
-            filename = Path(code_filepath).name
+            filename = Path(str_code_filepath).name
 
             is_not_module = code_name != '<module>'
 
@@ -45,7 +46,7 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
 
             current_globals = dict(frame.f_globals)
 
-            last_functions = last_files[code_filepath]
+            last_functions = last_files[str_code_filepath]
 
             if event in ('line', 'return'):
                 old_globals, old_locals = last_functions[function_name]
@@ -70,7 +71,7 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
                     'filename': filename,
                     **({'function': function_name} if function_name else {}),
                     'lineno': frame.f_lineno,
-                    **(source_code_cache[code_filepath][frame.f_lineno])
+                    **(source_code_cache[str_code_filepath][frame.f_lineno])
                 }))
                 last_functions[function_name] = (current_globals, current_locals)
                 return
