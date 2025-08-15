@@ -21,7 +21,7 @@ def exec_ast_segments(file_path: Path):
         single_node_ast = Module(body=[node], type_ignores=[])
         
         code_obj = compile(
-            source=single_node_ast,
+            single_node_ast,
             filename=file_path,
             mode='exec',
             dont_inherit=True
