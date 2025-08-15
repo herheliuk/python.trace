@@ -6,6 +6,8 @@ from sys import argv, exit
 from pathlib import Path
 
 def exec_ast_segments(file_path: Path):
+    assert file_path.name == 'test.py', 'this script is in dev!'
+    
     source = file_path.read_text(encoding='utf-8')
     parsed_ast = ast.parse(source, filename=file_path.name)
 
