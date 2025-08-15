@@ -65,24 +65,15 @@ def exec_ast_segments(file_path: Path):
             code_str = ast.unparse(node)
             input(f">>> {code_str}")
 
-            # Function definition
             if isinstance(node, ast.FunctionDef):
                 exec_node(node, exec_globals)
-
-            # Class definition
             elif isinstance(node, ast.ClassDef):
                 exec_node(node, exec_globals)
-
-            # Return statement
             elif isinstance(node, ast.Return):
                 value = eval_ast_expr(node.value, local_vars) if node.value else None
                 raise ReturnValue(value)
-
-            # Expression
             elif isinstance(node, ast.Expr):
                 eval_ast_expr(node.value, local_vars)
-
-            # Assignment
             elif isinstance(node, ast.Assign):
                 value = eval_ast_expr(node.value, local_vars)
                 for target in node.targets:
@@ -90,8 +81,6 @@ def exec_ast_segments(file_path: Path):
                         local_vars[target.id] = value
                     else:
                         exec_node(ast.Assign(targets=[target], value=node.value), local_vars)
-
-            # For loop
             elif isinstance(node, ast.For):
                 iter_obj = eval_ast_expr(node.iter, local_vars)
                 for item in iter_obj:
@@ -102,22 +91,16 @@ def exec_ast_segments(file_path: Path):
                     step_through_nodes(node.body, local_vars)
                 if node.orelse:
                     step_through_nodes(node.orelse, local_vars)
-
-            # While loop
             elif isinstance(node, ast.While):
                 while eval_ast_expr(node.test, local_vars):
                     step_through_nodes(node.body, local_vars)
                 if node.orelse:
                     step_through_nodes(node.orelse, local_vars)
-
-            # If statement
             elif isinstance(node, ast.If):
                 if eval_ast_expr(node.test, local_vars):
                     step_through_nodes(node.body, local_vars)
                 else:
                     step_through_nodes(node.orelse, local_vars)
-
-            # With statement
             elif isinstance(node, ast.With):
                 for item in node.items:
                     context = eval_ast_expr(item.context_expr, local_vars)
@@ -125,8 +108,6 @@ def exec_ast_segments(file_path: Path):
                     if varname:
                         local_vars[varname] = context
                 step_through_nodes(node.body, local_vars)
-
-            # Try/Except/Finally
             elif isinstance(node, ast.Try):
                 try:
                     step_through_nodes(node.body, local_vars)
@@ -138,8 +119,6 @@ def exec_ast_segments(file_path: Path):
                     step_through_nodes(node.finalbody, local_vars)
                 if node.orelse:
                     step_through_nodes(node.orelse, local_vars)
-
-            # Fallback for any other nodes
             else:
                 exec_node(node, local_vars)
 
