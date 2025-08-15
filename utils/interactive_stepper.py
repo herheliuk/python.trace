@@ -44,10 +44,6 @@ def await_command(prompt):
             # Backspace
             case b"\x08" | b"\x7f":
                 if not buffer:
-                    # Erase prompt from the terminal
-                    stdout.write("\b \b" * len(prompt))
-                    stdout.flush()
-                    
                     stdout.write("\n")
                     return 'backspace', None
                 else:
