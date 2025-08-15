@@ -17,20 +17,16 @@ def exec_ast_segments(file_path: Path):
         def __init__(self, value):
             self.value = value
 
-    # ---- helpers -------------------------------------------------------------
     def located(new_node, template):
-        """Copy lineno/col_offset from template and fill missing locations."""
         ast.copy_location(new_node, template)
         return ast.fix_missing_locations(new_node)
 
     def compile_stmt(node):
-        """Compile a single statement node safely."""
         mod = ast.Module(body=[node], type_ignores=[])
         ast.fix_missing_locations(mod)
         return compile(mod, filename=str(file_path), mode='exec', dont_inherit=True)
 
     def compile_expr(node):
-        """Compile an expression node safely."""
         expr_mod = ast.Expression(node)
         ast.fix_missing_locations(expr_mod)
         return compile(expr_mod, filename=str(file_path), mode='eval', dont_inherit=True)
