@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 @contextmanager
-def apply_dir(target_dir: Path):
+def use_dir(target_dir: Path):
     original_dir = Path.cwd()
     target_dir = str(target_dir)
     if target_dir not in path:
@@ -20,7 +20,7 @@ def apply_dir(target_dir: Path):
             chdir(original_dir)
     
 @contextmanager
-def apply_trace(trace_function):
+def use_trace(trace_function):
     old_trace = gettrace()
     settrace(trace_function)
     try:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from utils.context_managers import apply_dir
+from utils.context_managers import use_dir
 
 from ast import parse, unparse, Module
 from sys import argv, exit
@@ -11,7 +11,9 @@ def exec_ast_segments(file_path: Path):
     
     parsed_ast = parse(source, filename=file_path.name)
 
-    exec_globals = {}
+    exec_globals = {
+        '__file__': str(file_path)
+    }
     
     for node in parsed_ast.body:
         code_str = unparse(node)
@@ -31,7 +33,7 @@ def exec_ast_segments(file_path: Path):
 
 if __name__ == "__main__":
     script = Path(argv[1]).resolve()
-    with apply_dir(script.parent):
+    with use_dir(script.parent):
         try:
             exec_ast_segments(script)
         except KeyboardInterrupt:

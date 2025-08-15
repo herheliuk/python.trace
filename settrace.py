@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from utils.ast_functions import find_python_imports, get_source_code_cache
-from utils.context_managers import apply_dir, apply_trace, step_io
+from utils.context_managers import use_dir, use_trace, step_io
 from utils.scope_functions import diff_scope, filter_scope
 
 from json import dumps
@@ -112,14 +112,22 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
         
         compiled = compile(
             source_code,
-            filename=debug_script_path,
+            filename=debug_script_path.name,
             mode='exec',
             dont_inherit=True
         )
         
-        with apply_dir(debug_script_path.parent), apply_trace(trace_function):
+        exec_globals = {
+            '__file__': str(debug_script_path)
+        }
+        
+        with use_dir(debug_script_path.parent), use_trace(trace_function):
             try:
-                exec(compiled, globals={}, locals=None)
+                exec(
+                    compiled,
+                    globals=exec_globals,
+                    locals=None
+                )
             except KeyboardInterrupt:
                 exit(1)
 
