@@ -81,12 +81,9 @@ def exec_ast_segments(file_path: Path):
         local_vars = local_vars or {}
         for node in nodes:
             code_str = ast.unparse(node)
-            input(f">>> {code_str}")
+            print(f">>> {code_str}") if len(argv) == 3 else input(f">>> {code_str}")
 
-            if isinstance(node, ast.FunctionDef):
-                exec_node(node, exec_globals)
-
-            elif isinstance(node, ast.ClassDef):
+            if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
                 exec_node(node, exec_globals)
 
             elif isinstance(node, ast.Return):
