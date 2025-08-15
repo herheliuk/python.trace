@@ -10,7 +10,7 @@ def exec_ast_segments(file_path: Path):
     source = file_path.read_text(encoding='utf-8')
     
     parsed_ast = parse(source, filename=file_path.name)
-    
+
     exec_globals = {}
     
     for node in parsed_ast.body:
@@ -20,7 +20,12 @@ def exec_ast_segments(file_path: Path):
         
         single_node_ast = Module(body=[node], type_ignores=[])
         
-        code_obj = compile(single_node_ast, filename=file_path, mode='exec')
+        code_obj = compile(
+            source=single_node_ast,
+            filename=file_path,
+            mode='exec',
+            dont_inherit=True
+        )
         
         exec(code_obj, exec_globals)
 

@@ -11,7 +11,7 @@ def adD(a, b): #comm
 z = adD(x, y)
 f"z = {z}" #comm
 
-for i in range(1):
+for i in [1, 2]:
     z += i
 
 hey = {'1': 1, 2: f'{2}'}

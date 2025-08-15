@@ -16,22 +16,31 @@ def default_json_handler(obj):
 
 pretty_json = partial(dumps, indent=4, default=default_json_handler)
 
+def erase_one_line_from_the_terminal():
+    print("\033[F\033[K", end='', flush=True)
+
 def main(debug_script_path: Path, output_file: Path, interactive = None):
     paths_to_trace = find_python_imports(debug_script_path)
     
-    source_code_cache = {str(path): get_source_code_cache(path) for path in paths_to_trace}
+    source_code_cache = {
+        str(path): get_source_code_cache(path)
+        for path in paths_to_trace
+    }
     
     last_files = defaultdict(dict)
     
-    str_paths_to_trace = {str(path) for path in paths_to_trace}
+    str_paths_to_trace = {
+        str(path)
+        for path in paths_to_trace
+    }
     
-    def prev_line():
+    def revert_line():
         ...
     
     def jump_line(lineno):
         ...
     
-    with step_io(output_file, interactive, jump_line, prev_line) as (print_step, input_step):
+    with step_io(output_file, interactive, jump_line, revert_line) as (print_step, input_step):
         def trace_function(frame, event, arg):
             str_code_filepath = frame.f_code.co_filename
             if str_code_filepath not in str_paths_to_trace: return
@@ -84,8 +93,7 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
 
             elif event == 'call':
                 input_step(f"calling {target}")
-                if current_locals:
-                    print_step(pretty_json(current_locals))
+                if current_locals: print_step(pretty_json(current_locals))
                 last_functions.setdefault(function_name, (current_globals, current_locals))
                 return trace_function
 
@@ -101,7 +109,13 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
                 return
         
         source_code = debug_script_path.read_text()
-        compiled = compile(source_code, debug_script_path, mode='exec', dont_inherit=True)
+        
+        compiled = compile(
+            source_code,
+            filename=debug_script_path,
+            mode='exec',
+            dont_inherit=True
+        )
         
         with apply_dir(debug_script_path.parent), apply_trace(trace_function):
             try:
@@ -120,7 +134,7 @@ if __name__ == '__main__':
         print(f'Error: File "{debug_script_path.name}" does not exist or is a directory.')
         exit(1)
         
-    interactive = input('Step through? ')
+    interactive = input('Step through? '); erase_one_line_from_the_terminal()
     
     output_file = Path.cwd() / (debug_script_path.stem + '.trace.txt')
         

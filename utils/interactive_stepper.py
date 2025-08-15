@@ -38,14 +38,14 @@ def await_command(prompt):
                 stdout.write('\n')
                 lineno = buffer.decode()
                 if lineno.isdigit():
-                    return 'jump', lineno
-                return 'next', None
+                    return 'int', lineno
+                return 'enter', None
 
             # Backspace
             case b"\x08" | b"\x7f":
                 if not buffer:                    
                     stdout.write("\n")
-                    return 'prev', None
+                    return 'backspace', None
                 else:
                     buffer = buffer[:-1]
                     stdout.write("\b \b")
@@ -61,9 +61,9 @@ if __name__ == '__main__':
         code, lineno = await_command("> ")
 
         match code:
-            case 'next':
+            case 'enter':
                 print("NEXT LINE")
-            case 'prev':
+            case 'backspace':
                 print("PREV LINE")
-            case 'jump':
+            case 'int':
                 print(f"JUMP LINE {lineno}")
