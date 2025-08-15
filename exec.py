@@ -17,9 +17,26 @@ def exec_ast_segments(file_path: Path):
         def __init__(self, value):
             self.value = value
 
+    # ---- helpers -------------------------------------------------------------
+    def located(new_node, template):
+        """Copy lineno/col_offset from template and fill missing locations."""
+        ast.copy_location(new_node, template)
+        return ast.fix_missing_locations(new_node)
+
+    def compile_stmt(node):
+        """Compile a single statement node safely."""
+        mod = ast.Module(body=[node], type_ignores=[])
+        ast.fix_missing_locations(mod)
+        return compile(mod, filename=str(file_path), mode='exec', dont_inherit=True)
+
+    def compile_expr(node):
+        """Compile an expression node safely."""
+        expr_mod = ast.Expression(node)
+        ast.fix_missing_locations(expr_mod)
+        return compile(expr_mod, filename=str(file_path), mode='eval', dont_inherit=True)
+
     def exec_node(node, local_vars=None):
-        node_ast = ast.Module(body=[node], type_ignores=[])
-        code_obj = compile(node_ast, filename=str(file_path), mode='exec', dont_inherit=True)
+        code_obj = compile_stmt(node)
         exec(code_obj, exec_globals, local_vars or exec_globals)
 
     def eval_ast_expr(node, local_vars):
@@ -34,7 +51,10 @@ def exec_ast_segments(file_path: Path):
 
             if func_name in exec_globals:
                 func_obj = exec_globals[func_name]
-                func_def = next((n for n in parsed_ast.body if isinstance(n, ast.FunctionDef) and n.name == func_name), None)
+                func_def = next(
+                    (n for n in parsed_ast.body if isinstance(n, ast.FunctionDef) and n.name == func_name),
+                    None
+                )
                 if func_def:
                     print(f"--- Stepping into {func_name} ---")
                     func_local = dict(zip([arg.arg for arg in func_def.args.args], arg_values))
@@ -50,7 +70,7 @@ def exec_ast_segments(file_path: Path):
                     print(f"Function {func_name} returned {result}")
                     return result
             else:
-                return eval(compile(ast.Expression(node), filename=str(file_path), mode='eval'), exec_globals, local_vars)
+                return eval(compile_expr(node), exec_globals, local_vars)
 
         elif isinstance(node, ast.Name):
             if node.id in local_vars:
@@ -59,7 +79,7 @@ def exec_ast_segments(file_path: Path):
         elif isinstance(node, ast.Constant):
             return node.value
         else:
-            return eval(compile(ast.Expression(node), filename=str(file_path), mode='eval'), exec_globals, local_vars)
+            return eval(compile_expr(node), exec_globals, local_vars)
 
     def step_through_nodes(nodes, local_vars=None):
         local_vars = local_vars or {}
@@ -69,68 +89,108 @@ def exec_ast_segments(file_path: Path):
 
             if isinstance(node, ast.FunctionDef):
                 exec_node(node, exec_globals)
+
             elif isinstance(node, ast.ClassDef):
                 exec_node(node, exec_globals)
+
             elif isinstance(node, ast.Return):
                 value = eval_ast_expr(node.value, local_vars) if node.value else None
                 raise ReturnValue(value)
+
             elif isinstance(node, ast.Expr):
                 eval_ast_expr(node.value, local_vars)
+
             elif isinstance(node, ast.Assign):
                 value = eval_ast_expr(node.value, local_vars)
                 for target in node.targets:
                     if isinstance(target, ast.Name):
                         local_vars[target.id] = value
                     else:
-                        exec_node(ast.Assign(targets=[target], value=node.value), local_vars)
+                        assign_node = located(ast.Assign(targets=[target], value=node.value), node)
+                        exec_node(assign_node, local_vars)
+
             elif isinstance(node, ast.For):
                 iter_obj = eval_ast_expr(node.iter, local_vars)
                 for item in iter_obj:
                     if isinstance(node.target, ast.Name):
                         local_vars[node.target.id] = item
                     else:
-                        # Create an assignment AST node for complex targets
-                        assign_node = ast.Assign(
-                            targets=[node.target],
-                            value=ast.Constant(item)
+                        assign_node = located(
+                            ast.Assign(
+                                targets=[node.target],
+                                value=ast.Constant(item)
+                            ),
+                            node
                         )
-                        # Preserve the original location info
-                        ast.copy_location(assign_node, node)
-                        ast.fix_missing_locations(assign_node)
                         exec_node(assign_node, local_vars)
-
                     step_through_nodes(node.body, local_vars)
-
                 if node.orelse:
                     step_through_nodes(node.orelse, local_vars)
+
             elif isinstance(node, ast.While):
                 while eval_ast_expr(node.test, local_vars):
                     step_through_nodes(node.body, local_vars)
                 if node.orelse:
                     step_through_nodes(node.orelse, local_vars)
+
             elif isinstance(node, ast.If):
                 if eval_ast_expr(node.test, local_vars):
                     step_through_nodes(node.body, local_vars)
                 else:
                     step_through_nodes(node.orelse, local_vars)
+
             elif isinstance(node, ast.With):
+                managers = []
                 for item in node.items:
                     context = eval_ast_expr(item.context_expr, local_vars)
-                    varname = item.optional_vars.id if item.optional_vars else None
+                    enter = getattr(context, "__enter__", None)
+                    exit_ = getattr(context, "__exit__", None)
+
+                    if enter is None or exit_ is None:
+                        raise RuntimeError(f"Object {context} is not a context manager")
+
+                    value = enter()
+                    varname = (
+                        item.optional_vars.id
+                        if item.optional_vars and isinstance(item.optional_vars, ast.Name)
+                        else None
+                    )
                     if varname:
-                        local_vars[varname] = context
-                step_through_nodes(node.body, local_vars)
+                        local_vars[varname] = value
+
+                    managers.append(exit_)
+
+                try:
+                    step_through_nodes(node.body, local_vars)
+                finally:
+                    for exit_ in reversed(managers):
+                        exit_(None, None, None)
+
             elif isinstance(node, ast.Try):
                 try:
                     step_through_nodes(node.body, local_vars)
                 except Exception as e:
+                    handled = False
                     for handler in node.handlers:
-                        if handler.type is None or isinstance(e, eval_ast_expr(handler.type, local_vars)):
+                        if handler.type is None:
                             step_through_nodes(handler.body, local_vars)
+                            handled = True
+                            break
+                        try:
+                            exc_type = eval_ast_expr(handler.type, local_vars)
+                            if isinstance(e, exc_type):
+                                step_through_nodes(handler.body, local_vars)
+                                handled = True
+                                break
+                        except Exception:
+                            pass
+                    if not handled:
+                        raise
                 finally:
                     step_through_nodes(node.finalbody, local_vars)
                 if node.orelse:
                     step_through_nodes(node.orelse, local_vars)
+
             else:
                 exec_node(node, local_vars)
 
