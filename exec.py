@@ -195,4 +195,5 @@ if __name__ == "__main__":
         try:
             exec_ast_segments(script)
         except KeyboardInterrupt:
+            print()
             exit(1)

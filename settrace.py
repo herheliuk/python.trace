@@ -129,6 +129,7 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
                     locals=None
                 )
             except KeyboardInterrupt:
+                print()
                 exit(1)
 
 if __name__ == '__main__':
