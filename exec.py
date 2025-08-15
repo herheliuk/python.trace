@@ -89,8 +89,18 @@ def exec_ast_segments(file_path: Path):
                     if isinstance(node.target, ast.Name):
                         local_vars[node.target.id] = item
                     else:
-                        exec_node(ast.Assign(targets=[node.target], value=ast.Constant(item)), local_vars)
+                        # Create an assignment AST node for complex targets
+                        assign_node = ast.Assign(
+                            targets=[node.target],
+                            value=ast.Constant(item)
+                        )
+                        # Preserve the original location info
+                        ast.copy_location(assign_node, node)
+                        ast.fix_missing_locations(assign_node)
+                        exec_node(assign_node, local_vars)
+
                     step_through_nodes(node.body, local_vars)
+
                 if node.orelse:
                     step_through_nodes(node.orelse, local_vars)
             elif isinstance(node, ast.While):
