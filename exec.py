@@ -2,14 +2,70 @@
 
 from utils.context_managers import use_dir
 import ast
+import importlib
+import inspect
 from sys import argv, exit
 from pathlib import Path
 
+
 def exec_ast_segments(file_path: Path):
     assert file_path.name == 'test.py', 'this script is in dev!'
-    
-    source = file_path.read_text(encoding='utf-8')
-    parsed_ast = ast.parse(source, filename=file_path.name)
+
+    all_func_defs = {}
+    project_root = file_path.parent.resolve()
+
+    def is_project_file(path: Path) -> bool:
+        """Check if path belongs to the project root."""
+        try:
+            # Python 3.9+ way
+            return path.resolve().is_relative_to(project_root)
+        except AttributeError:
+            # Fallback for older Python
+            try:
+                path.resolve().relative_to(project_root)
+                return True
+            except ValueError:
+                return False
+
+    def index_functions_from_file(path: Path):
+        try:
+            if not path.exists() or path.suffix != ".py":
+                return
+            if not is_project_file(path):
+                return  # Skip non-project files
+            src = path.read_text(encoding="utf-8")
+            parsed = ast.parse(src, filename=path.name)
+            for node in parsed.body:
+                if isinstance(node, ast.FunctionDef):
+                    all_func_defs[node.name] = (node, path)
+            return parsed
+        except Exception as e:
+            print(f"[WARN] Could not index functions from {path}: {e}")
+
+    def index_from_imports(parsed_ast):
+        for node in parsed_ast.body:
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    try:
+                        mod = importlib.import_module(alias.name)
+                        mod_path = Path(inspect.getfile(mod))
+                        if is_project_file(mod_path):
+                            index_functions_from_file(mod_path)
+                    except Exception:
+                        pass
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:
+                    try:
+                        mod = importlib.import_module(node.module)
+                        mod_path = Path(inspect.getfile(mod))
+                        if is_project_file(mod_path):
+                            index_functions_from_file(mod_path)
+                    except Exception:
+                        pass
+
+    parsed_ast = index_functions_from_file(file_path)
+    if parsed_ast:
+        index_from_imports(parsed_ast)
 
     exec_globals = {'__file__': str(file_path)}
 
@@ -45,26 +101,25 @@ def exec_ast_segments(file_path: Path):
 
             arg_values = [eval_ast_expr(arg, local_vars) for arg in node.args]
 
-            if func_name in exec_globals:
+            if func_name in all_func_defs:
+                func_def, def_path = all_func_defs[func_name]
+                if not is_project_file(def_path):
+                    # Skip stepping into library code
+                    return eval(compile_expr(node), exec_globals, local_vars)
+                print(f"--- Stepping into {func_name} (from {def_path}) ---")
+                func_local = dict(zip([arg.arg for arg in func_def.args.args], arg_values))
+                try:
+                    step_through_nodes(func_def.body, func_local)
+                    result = func_local.get('__return__')
+                except ReturnValue as r:
+                    result = r.value
+                print(f"Function {func_name} returned {result}")
+                return result
+            elif func_name in exec_globals:
                 func_obj = exec_globals[func_name]
-                func_def = next(
-                    (n for n in parsed_ast.body if isinstance(n, ast.FunctionDef) and n.name == func_name),
-                    None
-                )
-                if func_def:
-                    print(f"--- Stepping into {func_name} ---")
-                    func_local = dict(zip([arg.arg for arg in func_def.args.args], arg_values))
-                    try:
-                        step_through_nodes(func_def.body, func_local)
-                        result = func_local.get('__return__')
-                    except ReturnValue as r:
-                        result = r.value
-                    print(f"Function {func_name} returned {result}")
-                    return result
-                else:
-                    result = func_obj(*arg_values)
-                    print(f"Function {func_name} returned {result}")
-                    return result
+                result = func_obj(*arg_values)
+                print(f"Function {func_name} returned {result}")
+                return result
             else:
                 return eval(compile_expr(node), exec_globals, local_vars)
 
@@ -83,7 +138,10 @@ def exec_ast_segments(file_path: Path):
             code_str = ast.unparse(node)
             print(f">>> {code_str}") if len(argv) == 3 else input(f">>> {code_str}")
 
-            if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+            if isinstance(node, ast.FunctionDef):
+                exec_node(node, exec_globals)
+
+            elif isinstance(node, ast.ClassDef):
                 exec_node(node, exec_globals)
 
             elif isinstance(node, ast.Return):
@@ -189,11 +247,11 @@ def exec_ast_segments(file_path: Path):
 
     step_through_nodes(parsed_ast.body)
 
+
 if __name__ == "__main__":
     script = Path(argv[1]).resolve()
     with use_dir(script.parent):
         try:
             exec_ast_segments(script)
         except KeyboardInterrupt:
-            print()
             exit(1)
