@@ -112,7 +112,7 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
         
         compiled = compile(
             source_code,
-            filename=debug_script_path.name,
+            filename=debug_script_path,
             mode='exec',
             dont_inherit=True
         )

@@ -37,7 +37,7 @@ def step_io(output_file: Path, interactive: bool, jump_line, revert_line):
             print(text)
             
         def input_step(text):
-            code, lineno = await_command(text)
+            code, return_value = await_command(text)
             
             match code:
                 case 'enter':
@@ -45,7 +45,7 @@ def step_io(output_file: Path, interactive: bool, jump_line, revert_line):
                 case 'backspace':
                     revert_line()
                 case 'int':
-                    jump_line(lineno)
+                    jump_line(return_value)
         
         def finalize():
             pass

@@ -43,7 +43,11 @@ def await_command(prompt):
 
             # Backspace
             case b"\x08" | b"\x7f":
-                if not buffer:                    
+                if not buffer:
+                    # Erase prompt from the terminal
+                    stdout.write("\b \b" * len(prompt))
+                    stdout.flush()
+                    
                     stdout.write("\n")
                     return 'backspace', None
                 else:
@@ -58,7 +62,7 @@ def await_command(prompt):
 
 if __name__ == '__main__':
     while True:
-        code, lineno = await_command("> ")
+        code, return_value = await_command("> ")
 
         match code:
             case 'enter':
@@ -66,4 +70,4 @@ if __name__ == '__main__':
             case 'backspace':
                 print("PREV LINE")
             case 'int':
-                print(f"JUMP LINE {lineno}")
+                print(f"JUMP LINE {return_value}")
