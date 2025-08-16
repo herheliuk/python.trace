@@ -121,6 +121,12 @@ def stepper(file_path: Path, debug=False):
 if __name__ == '__main__':
     from settrace import pretty_json, filter_scope, use_dir, argv
     script_path = Path(argv[1]).resolve()
+    assert script_path.name == 'test.py', 'this script is in dev!'
     with use_dir(script_path.parent):
         exec_globals, exec_locals = stepper(script_path, debug=len(argv) != 3)
-    print(pretty_json(filter_scope({**exec_globals, **exec_locals})))
+    if (filtered_globals := filter_scope(exec_globals)):
+        print(pretty_json(filtered_globals))
+    if (filtered_locals := filter_scope(exec_locals)):
+        print(pretty_json(filtered_locals))
+
+# globals are broken!
