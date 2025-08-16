@@ -16,7 +16,15 @@ def exec_ast_segments(file_path: Path):
     module_scopes = {}  # Store globals of executed modules
 
     def is_project_file(path: Path) -> bool:
-        return path.resolve().is_relative_to(project_root)
+        try:
+            resolved = path.resolve()
+            return resolved.is_relative_to(project_root) and "site-packages" not in str(resolved)
+        except AttributeError:
+            try:
+                path.resolve().relative_to(project_root)
+                return "site-packages" not in str(path.resolve())
+            except ValueError:
+                return False
 
     def index_functions_from_file(path: Path):
         try:
@@ -47,32 +55,8 @@ def exec_ast_segments(file_path: Path):
         module_scopes[path] = mod_globals
         return mod_globals
 
-    def index_from_imports(parsed_ast):
-        for node in parsed_ast.body:
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    try:
-                        mod = importlib.import_module(alias.name)
-                        mod_path = Path(inspect.getfile(mod))
-                        if is_project_file(mod_path):
-                            step_execute_module(mod_path)
-                            index_functions_from_file(mod_path)
-                    except Exception:
-                        pass
-            elif isinstance(node, ast.ImportFrom):
-                if node.module:
-                    try:
-                        mod = importlib.import_module(node.module)
-                        mod_path = Path(inspect.getfile(mod))
-                        if is_project_file(mod_path):
-                            step_execute_module(mod_path)
-                            index_functions_from_file(mod_path)
-                    except Exception:
-                        pass
-
+    # Parse the main file first (no imports stepped yet)
     parsed_ast = index_functions_from_file(file_path)
-    if parsed_ast:
-        index_from_imports(parsed_ast)
 
     exec_globals = {'__file__': str(file_path)}
 
@@ -233,7 +217,44 @@ def exec_ast_segments(file_path: Path):
             else:
                 exec_node(node, local_vars)
 
-    step_through_nodes(parsed_ast.body)
+    # ------------------------
+    # Runtime import hooking
+    # ------------------------
+    import builtins
+    import importlib as _importlib
+
+    original_import = builtins.__import__
+    original_import_module = _importlib.import_module
+
+    def _maybe_step_module(mod):
+        try:
+            mod_path = Path(inspect.getfile(mod))
+            if is_project_file(mod_path) and mod_path not in module_scopes:
+                step_execute_module(mod_path)
+                index_functions_from_file(mod_path)
+        except TypeError:
+            # Built-in modules have no file
+            pass
+        except Exception as e:
+            print(f"[WARN] Could not step module {mod}: {e}")
+
+    def hooked_import(name, globals=None, locals=None, fromlist=(), level=0):
+        mod = original_import(name, globals, locals, fromlist, level)
+        _maybe_step_module(mod)
+        return mod
+
+    def hooked_import_module(name, package=None):
+        mod = original_import_module(name, package)
+        _maybe_step_module(mod)
+        return mod
+
+    exec_globals['__builtins__'] = dict(builtins.__dict__, __import__=hooked_import)
+    exec_globals['importlib'] = _importlib
+    exec_globals['importlib'].import_module = hooked_import_module
+
+    # Start stepping through the main file
+    if parsed_ast:
+        step_through_nodes(parsed_ast.body)
 
 
 if __name__ == "__main__":
