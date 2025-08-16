@@ -1,7 +1,7 @@
 import ast
 from pathlib import Path
 
-def stepper(file_path: Path):
+def stepper(file_path: Path, debug=False):
     exec_globals = {'__file__': str(file_path)}
     exec_locals = {}
 
@@ -40,6 +40,10 @@ def stepper(file_path: Path):
     def step_through_nodes(nodes, local_vars=None):
         local_vars = local_vars or exec_locals
         for node in nodes:
+            if debug:
+                input(f">>> {ast.unparse(node)}")
+            else:
+                print(f">>> {ast.unparse(node)}")
             if isinstance(node, ast.FunctionDef):
                 exec_node(node, local_vars)
             elif isinstance(node, ast.ClassDef):
@@ -118,5 +122,5 @@ if __name__ == '__main__':
     from settrace import pretty_json, filter_scope, use_dir, argv
     script_path = Path(argv[1]).resolve()
     with use_dir(script_path.parent):
-        exec_globals, exec_locals = stepper(script_path)
-    print(pretty_json(filter_scope(exec_locals)))
+        exec_globals, exec_locals = stepper(script_path, debug=len(argv) != 3)
+    print(pretty_json(filter_scope({**exec_globals, **exec_locals})))
