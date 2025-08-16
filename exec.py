@@ -15,24 +15,14 @@ def exec_ast_segments(file_path: Path):
     project_root = file_path.parent.resolve()
 
     def is_project_file(path: Path) -> bool:
-        """Check if path belongs to the project root."""
-        try:
-            # Python 3.9+ way
-            return path.resolve().is_relative_to(project_root)
-        except AttributeError:
-            # Fallback for older Python
-            try:
-                path.resolve().relative_to(project_root)
-                return True
-            except ValueError:
-                return False
+        return path.resolve().is_relative_to(project_root)
 
     def index_functions_from_file(path: Path):
         try:
             if not path.exists() or path.suffix != ".py":
                 return
             if not is_project_file(path):
-                return  # Skip non-project files
+                return
             src = path.read_text(encoding="utf-8")
             parsed = ast.parse(src, filename=path.name)
             for node in parsed.body:
