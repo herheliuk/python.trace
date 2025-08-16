@@ -3,7 +3,6 @@ from pathlib import Path
 
 def stepper(file_path: Path, debug=False):
     exec_globals = {'__file__': str(file_path)}
-    exec_locals = {}
 
     class ReturnValue(Exception):
         def __init__(self, value):
@@ -25,25 +24,31 @@ def stepper(file_path: Path, debug=False):
 
     def exec_node(node, local_vars=None):
         code_obj = compile_stmt(node)
-        exec(code_obj, exec_globals, local_vars or exec_locals)
+        if local_vars is None:
+            exec(code_obj, exec_globals)  # use globals for both
+        else:
+            exec(code_obj, exec_globals, local_vars)
 
-    def eval_ast_expr(node, local_vars):
+    def eval_ast_expr(node, local_vars=None):
+        scope = exec_globals if local_vars is None else local_vars
         if isinstance(node, ast.Call):
-            return eval(compile_expr(node), exec_globals, local_vars)
+            return eval(compile_expr(node), exec_globals, scope)
         elif isinstance(node, ast.Name):
-            return local_vars.get(node.id, exec_globals.get(node.id))
+            if local_vars is not None and node.id in local_vars:
+                return local_vars[node.id]
+            return exec_globals.get(node.id)
         elif isinstance(node, ast.Constant):
             return node.value
         else:
-            return eval(compile_expr(node), exec_globals, local_vars)
+            return eval(compile_expr(node), exec_globals, scope)
 
     def step_through_nodes(nodes, local_vars=None):
-        local_vars = local_vars or exec_locals
         for node in nodes:
             if debug:
                 input(f">>> {ast.unparse(node)}")
             else:
                 print(f">>> {ast.unparse(node)}")
+
             if isinstance(node, ast.FunctionDef):
                 exec_node(node, local_vars)
             elif isinstance(node, ast.ClassDef):
@@ -57,16 +62,21 @@ def stepper(file_path: Path, debug=False):
                 value = eval_ast_expr(node.value, local_vars)
                 for target in node.targets:
                     if isinstance(target, ast.Name):
-                        local_vars[target.id] = value
+                        (local_vars or exec_globals)[target.id] = value
                     else:
-                        assign_node = located(ast.Assign(targets=[target], value=node.value), node)
+                        assign_node = located(
+                            ast.Assign(targets=[target], value=node.value), node
+                        )
                         exec_node(assign_node, local_vars)
             elif isinstance(node, ast.For):
                 for item in eval_ast_expr(node.iter, local_vars):
                     if isinstance(node.target, ast.Name):
-                        local_vars[node.target.id] = item
+                        (local_vars or exec_globals)[node.target.id] = item
                     else:
-                        assign_node = located(ast.Assign(targets=[node.target], value=ast.Constant(item)), node)
+                        assign_node = located(
+                            ast.Assign(targets=[node.target], value=ast.Constant(item)),
+                            node,
+                        )
                         exec_node(assign_node, local_vars)
                     step_through_nodes(node.body, local_vars)
                 if node.orelse:
@@ -87,7 +97,7 @@ def stepper(file_path: Path, debug=False):
                     context = eval_ast_expr(item.context_expr, local_vars)
                     value = context.__enter__()
                     if item.optional_vars and isinstance(item.optional_vars, ast.Name):
-                        local_vars[item.optional_vars.id] = value
+                        (local_vars or exec_globals)[item.optional_vars.id] = value
                     managers.append(context.__exit__)
                 try:
                     step_through_nodes(node.body, local_vars)
@@ -100,7 +110,9 @@ def stepper(file_path: Path, debug=False):
                 except Exception as e:
                     handled = False
                     for handler in node.handlers:
-                        if handler.type is None or isinstance(e, eval_ast_expr(handler.type, local_vars)):
+                        if handler.type is None or isinstance(
+                            e, eval_ast_expr(handler.type, local_vars)
+                        ):
                             step_through_nodes(handler.body, local_vars)
                             handled = True
                             break
@@ -115,18 +127,14 @@ def stepper(file_path: Path, debug=False):
 
     src = file_path.read_text(encoding="utf-8")
     parsed_ast = ast.parse(src, filename=file_path.name)
-    step_through_nodes(parsed_ast.body, exec_locals)
-    return exec_globals, exec_locals
+    step_through_nodes(parsed_ast.body)
+    return exec_globals
 
 if __name__ == '__main__':
     from settrace import pretty_json, filter_scope, use_dir, argv
     script_path = Path(argv[1]).resolve()
     assert script_path.name == 'test.py', 'this script is in dev!'
     with use_dir(script_path.parent):
-        exec_globals, exec_locals = stepper(script_path, debug=len(argv) != 3)
+        exec_globals = stepper(script_path, debug=len(argv) != 3)
     if (filtered_globals := filter_scope(exec_globals)):
-        print(pretty_json(filtered_globals))
-    if (filtered_locals := filter_scope(exec_locals)):
-        print(pretty_json(filtered_locals))
-
-# globals are broken!
+        print('Globals: ' +  pretty_json(filtered_globals))
