@@ -3,6 +3,10 @@
 x = 5
 y = 10
 
+from one import hey
+
+hey()
+
 def adD(a, b): #comm
     tqeww = 1
     del tqeww
