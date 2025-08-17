@@ -40,7 +40,7 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
             if 'scope' in argv: print(f'\033[32m{pretty_json(filter_scope(local_vars))}\033[1;37m')
             (print if 'skip' in argv else input)(f"\033[1;31m>>> \033[33m{ast.unparse(node)}\033[1;37m")
 
-            # Problematic, returns from imported functions are raised instead.
+            # [BUG] since returns are raised they are getting caught by the script try's
 
 #            if isinstance(node, ast.FunctionDef):
 #                def make_func(node):
