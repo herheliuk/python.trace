@@ -1,3 +1,5 @@
+> This project is an independent effort and is not affiliated with, nor endorsed by, the Python Software Foundation.
+
 macOS | Linux
 ```zsh
 source env.sh
