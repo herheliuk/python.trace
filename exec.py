@@ -10,6 +10,9 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
         def __init__(self, value):
             self.value = value
 
+    class BreakSignal(BaseException): pass
+    class ContinueSignal(BaseException): pass
+
     def located(new_node, template):
         ast.copy_location(new_node, template)
         return ast.fix_missing_locations(new_node)
@@ -41,6 +44,47 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
             temp_globals.update(local_vars)
 
         return eval(compile_node(node, 'eval'), temp_globals, {})
+
+    def pattern_matches(pattern, value, local_vars):
+        match pattern:
+            case ast.MatchAs(name=None, pattern=None):
+                return True
+            case ast.MatchAs(name, None):
+                (local_vars or exec_globals)[name] = value
+                return True
+            case ast.MatchValue(value=const):
+                return eval_node(const, local_vars) == value
+            case ast.MatchSingleton(value=const):
+                return const is value
+            case ast.MatchSequence(patterns=patterns):
+                if not isinstance(value, (list, tuple)) or len(value) != len(patterns):
+                    return False
+                return all(pattern_matches(p, v, local_vars) for p, v in zip(patterns, value))
+            case ast.MatchMapping(keys=keys, patterns=patterns):
+                if not isinstance(value, dict):
+                    return False
+                for key, pat in zip(keys, patterns):
+                    key_val = eval_node(key, local_vars)
+                    if key_val not in value or not pattern_matches(pat, value[key_val], local_vars):
+                        return False
+                return True
+            case ast.MatchClass(cls, patterns, kwd_attrs, kwd_patterns):
+                cls_eval = eval_node(cls, local_vars)
+                if not isinstance(value, cls_eval):
+                    return False
+                args = getattr(value, "__match_args__", ())
+                for pat, attr in zip(patterns, args):
+                    if not pattern_matches(pat, getattr(value, attr), local_vars):
+                        return False
+                for attr, pat in zip(kwd_attrs, kwd_patterns):
+                    if not pattern_matches(pat, getattr(value, attr), local_vars):
+                        return False
+                return True
+            case ast.MatchOr(patterns=patterns):
+                return any(pattern_matches(p, value, local_vars) for p in patterns)
+            case _:
+                print(f"\033[1;31mUnknown match pattern: {type(pattern).__name__}\033[1;37m")
+                return False
 
     def step_nodes(nodes, local_vars=None):
         for node in nodes:
@@ -102,15 +146,33 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
                             (local_vars or exec_globals)[node.target.id] = item
                         else:
                             exec_node(located(ast.Assign(targets=[node.target], value=make_ast_from_value(item)), node), local_vars)
-                        step_nodes(node.body, local_vars)
-                    if node.orelse:
-                        step_nodes(node.orelse, local_vars)
+                        try:
+                            step_nodes(node.body, local_vars)
+                        except ContinueSignal:
+                            continue
+                        except BreakSignal:
+                            break
+                    else:  # loop finished without break
+                        if node.orelse:
+                            step_nodes(node.orelse, local_vars)
 
                 case ast.While():
                     while eval_node(node.test, local_vars):
-                        step_nodes(node.body, local_vars)
-                    if node.orelse:
-                        step_nodes(node.orelse, local_vars)
+                        try:
+                            step_nodes(node.body, local_vars)
+                        except ContinueSignal:
+                            continue
+                        except BreakSignal:
+                            break
+                    else:  # loop finished without break
+                        if node.orelse:
+                            step_nodes(node.orelse, local_vars)
+
+                case ast.Break():
+                    raise BreakSignal()
+
+                case ast.Continue():
+                    raise ContinueSignal()
 
                 case ast.If():
                     branch = node.body if eval_node(node.test, local_vars) else node.orelse
@@ -184,7 +246,16 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
                             (local_vars or exec_globals)[asname] = getattr(mod, name)
 
                 case ast.Match():
-                    print('\033[1;31mMatch/Case is not supported yet.\033[1;37m'); exit()
+                    subject_value = eval_node(node.subject, local_vars)
+                    matched = False
+                    for case_ in node.cases:
+                        if pattern_matches(case_.pattern, subject_value, local_vars):
+                            if case_.guard is None or eval_node(case_.guard, local_vars):
+                                step_nodes(case_.body, local_vars)
+                                matched = True
+                                break
+                    if not matched:
+                        pass
 
                 case _:
                     print(f"\033[1;31mUnknown node: {type(node).__name__}\033[1;37m")
