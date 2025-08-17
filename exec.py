@@ -92,11 +92,11 @@ def stepper(file_path: Path):
             elif isinstance(node, ast.Try):
                 try:
                     step_nodes(node.body, local_vars)
-                except Exception as e:
+                except Exception as error:
                     handled = False
-                    for h in node.handlers:
-                        if h.type is None or isinstance(e, eval_node(h.type, local_vars)):
-                            step_nodes(h.body, local_vars)
+                    for handler in node.handlers:
+                        if handler.type is None or isinstance(error, eval_node(handler.type, local_vars)):
+                            step_nodes(handler.body, local_vars)
                             handled = True
                             break
                     if not handled:
