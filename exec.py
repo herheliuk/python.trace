@@ -186,6 +186,9 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
                             name = alias.name
                             asname = alias.asname or name
                             (local_vars or exec_globals)[asname] = getattr(mod, name)
+            
+            elif isinstance(node, ast.Match):
+                print('\033[1;31mMatch/Case is not supported yet.\033[1;37m'); exit()
 
             else:
                 print(f"\033[1;31mUnknown node: {type(node).__name__}\033[1;37m")
