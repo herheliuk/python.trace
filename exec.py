@@ -6,7 +6,7 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
     module_name = module_name or '__main__'
     exec_globals = exec_globals or {'__file__': str(file_path), '__name__': module_name}
 
-    class ReturnValue(Exception):
+    class ReturnValue(BaseException):
         def __init__(self, value):
             self.value = value
 
@@ -41,9 +41,6 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
             (print if 'skip' in argv else input)(f"\033[1;31m>>> \033[33m{ast.unparse(node)}\033[1;37m")
 
             if isinstance(node, ast.FunctionDef):
-                exec_node(node, local_vars)
-
-                '''if isinstance(node, ast.FunctionDef):
                 def make_func(node):
                     arg_names = [arg.arg for arg in node.args.args]
                     def func(*args, **kwargs):
@@ -54,14 +51,16 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
                         except ReturnValue as rv:
                             return rv.value
                     return func
-            
+
                 func_obj = make_func(node)
-                (local_vars or exec_globals)[node.name] = func_obj'''
+                (local_vars or exec_globals)[node.name] = func_obj
 
             elif isinstance(node, ast.ClassDef):
                 exec_node(node, local_vars)
 
             elif isinstance(node, ast.Return):
+                if local_vars is None:
+                    raise SyntaxError("'return' outside function")
                 value = eval_node(node.value, local_vars) if node.value else None
                 raise ReturnValue(value)
 
@@ -111,9 +110,14 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
                         exit_(None, None, None)
 
             elif isinstance(node, ast.Try):
+                no_exc = True
                 try:
                     step_nodes(node.body, local_vars)
+                except ReturnValue:
+                    no_exc = False
+                    raise
                 except Exception as error:
+                    no_exc = False
                     handled = False
                     for handler in node.handlers:
                         if handler.type is None or isinstance(error, eval_node(handler.type, local_vars)):
@@ -124,7 +128,7 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
                         raise
                 finally:
                     step_nodes(node.finalbody, local_vars)
-                if node.orelse:
+                if no_exc and node.orelse:
                     step_nodes(node.orelse, local_vars)
 
             elif isinstance(node, (ast.Import, ast.ImportFrom)):
