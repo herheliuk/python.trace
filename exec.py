@@ -1,8 +1,10 @@
 import ast
+import types
 from pathlib import Path
 
-def stepper(file_path: Path):
-    exec_globals = {'__file__': str(file_path)}
+def stepper(file_path: Path, exec_globals=None, module_name=None):
+    module_name = module_name or '__main__'
+    exec_globals = exec_globals or {'__file__': str(file_path), '__name__': module_name}
 
     class ReturnValue(Exception):
         def __init__(self, value):
@@ -106,13 +108,45 @@ def stepper(file_path: Path):
                 if node.orelse:
                     step_nodes(node.orelse, local_vars)
 
+            elif isinstance(node, (ast.Import, ast.ImportFrom)):
+                if isinstance(node, ast.Import):
+                    for alias in node.names:
+                        mod_name = alias.name
+                        asname = alias.asname or alias.name
+                        mod_path = Path(mod_name.replace('.', '/') + '.py')
+                        if mod_path.exists():
+                            mod_obj = types.ModuleType(mod_name)
+                            imported_globals = stepper(mod_path, module_name=mod_name)
+                            mod_obj.__dict__.update(imported_globals)
+                            (local_vars or exec_globals)[asname] = mod_obj
+                        else:
+                            (local_vars or exec_globals)[asname] = __import__(mod_name)
+                elif isinstance(node, ast.ImportFrom):
+                    mod_name = node.module
+                    mod_path = Path(mod_name.replace('.', '/') + '.py')
+                    if mod_path.exists():
+                        mod_obj = types.ModuleType(mod_name)
+                        imported_globals = stepper(mod_path, module_name=mod_name)
+                        mod_obj.__dict__.update(imported_globals)
+                        for alias in node.names:
+                            name = alias.name
+                            asname = alias.asname or name
+                            (local_vars or exec_globals)[asname] = mod_obj.__dict__[name]
+                    else:
+                        mod = __import__(mod_name, fromlist=[alias.name for alias in node.names])
+                        for alias in node.names:
+                            name = alias.name
+                            asname = alias.asname or name
+                            (local_vars or exec_globals)[asname] = getattr(mod, name)
+
             else:
                 print(f"\033[1;31mUnknown node: {type(node).__name__}\033[1;37m")
                 exec_node(node, local_vars)
 
     source = file_path.read_text(encoding="utf-8")
     parsed = ast.parse(source, filename=file_path.name)
-    step_nodes(parsed.body)
+    step_nodes(parsed.body, exec_globals)
+    return exec_globals
 
 if __name__ == '__main__':
     from settrace import pretty_json, filter_scope, use_dir, argv
