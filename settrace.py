@@ -16,9 +16,6 @@ def default_json_handler(obj):
 
 pretty_json = partial(dumps, indent=4, default=default_json_handler)
 
-def erase_last_line_from_terminal():
-    print("\033[F\033[K", end='', flush=True)
-
 def main(debug_script_path: Path, output_file: Path, interactive = None):
     paths_to_trace = find_python_imports(debug_script_path)
     
@@ -131,6 +128,9 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
             except KeyboardInterrupt:
                 print()
                 exit(1)
+
+def erase_last_line_from_terminal():
+    print("\033[F\033[K", end='', flush=True)
 
 if __name__ == '__main__':
     if len(argv) != 2:
