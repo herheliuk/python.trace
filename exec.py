@@ -43,20 +43,20 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
             if isinstance(node, ast.FunctionDef):
                 exec_node(node, local_vars)
 
-#            if isinstance(node, ast.FunctionDef):
-#                def make_func(node):
-#                    arg_names = [arg.arg for arg in node.args.args]
-#                    def func(*args, **kwargs):
-#                        local_vars = dict(zip(arg_names, args))
-#                        local_vars.update(kwargs)
-#                        try:
-#                            step_nodes(node.body, local_vars)
-#                        except ReturnValue as rv:
-#                            return rv.value
-#                    return func
-#            
-#                func_obj = make_func(node)
-#                (local_vars or exec_globals)[node.name] = func_obj
+                '''if isinstance(node, ast.FunctionDef):
+                def make_func(node):
+                    arg_names = [arg.arg for arg in node.args.args]
+                    def func(*args, **kwargs):
+                        local_vars = dict(zip(arg_names, args))
+                        local_vars.update(kwargs)
+                        try:
+                            step_nodes(node.body, local_vars)
+                        except ReturnValue as rv:
+                            return rv.value
+                    return func
+            
+                func_obj = make_func(node)
+                (local_vars or exec_globals)[node.name] = func_obj'''
 
             elif isinstance(node, ast.ClassDef):
                 exec_node(node, local_vars)
