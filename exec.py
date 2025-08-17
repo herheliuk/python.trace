@@ -264,9 +264,9 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
                     print(f"\033[1;31mUnknown node: {type(node).__name__}\033[1;37m")
                     exec_node(node, local_vars)
 
-    source = file_path.read_text(encoding="utf-8")
-    parsed = ast.parse(source, filename=file_path.name)
-    step_nodes(parsed.body, exec_globals)
+    source_code = file_path.read_text(encoding="utf-8")
+    parsed_ast = ast.parse(source_code, filename=file_path.name)
+    step_nodes(parsed_ast.body, exec_globals)
     return exec_globals
 
 if __name__ == '__main__':
