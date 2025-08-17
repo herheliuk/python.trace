@@ -152,7 +152,7 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
                             continue
                         except BreakSignal:
                             break
-                    else:  # loop finished without break
+                    else:
                         if node.orelse:
                             step_nodes(node.orelse, local_vars)
 
@@ -164,7 +164,7 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
                             continue
                         except BreakSignal:
                             break
-                    else:  # loop finished without break
+                    else:
                         if node.orelse:
                             step_nodes(node.orelse, local_vars)
 
@@ -256,6 +256,9 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
                                 break
                     if not matched:
                         pass
+                
+                case ast.Delete() | ast.AugAssign():
+                    exec_node(node, local_vars)
 
                 case _:
                     print(f"\033[1;31mUnknown node: {type(node).__name__}\033[1;37m")
