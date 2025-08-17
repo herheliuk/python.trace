@@ -37,7 +37,8 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
 
     def step_nodes(nodes, local_vars=None):
         for node in nodes:
-            (input if len(argv) != 3 else print)(f"\033[1;31m>>> \033[33m{ast.unparse(node)}\033[1;37m")
+            if len(argv) >= 4: print(f'\033[32m{pretty_json(filter_scope(local_vars))}\033[1;37m')
+            (print if len(argv) >= 3 else input)(f"\033[1;31m>>> \033[33m{ast.unparse(node)}\033[1;37m")
 
             if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
                 exec_node(node, local_vars)
