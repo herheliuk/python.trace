@@ -22,38 +22,58 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
         ast.fix_missing_locations(mod)
         return compile(mod, filename=str(file_path), mode=mode)
 
+    def make_ast_from_value(value):
+        """Create an AST node from any Python object."""
+        return ast.parse(repr(value), mode='eval').body
+
     def exec_node(node, local_vars=None):
         exec(compile_node(node, 'exec'), exec_globals, local_vars)
 
     def eval_node(node, local_vars=None):
-        scope = exec_globals if local_vars is None else local_vars
         if isinstance(node, ast.Name):
             if local_vars and node.id in local_vars:
                 return local_vars[node.id]
             return exec_globals.get(node.id)
         if isinstance(node, ast.Constant):
             return node.value
-        return eval(compile_node(node, 'eval'), exec_globals, scope)
+
+        # Merge local_vars into globals for generator expressions / comprehensions
+        temp_globals = exec_globals.copy()
+        if local_vars:
+            temp_globals.update(local_vars)
+
+        return eval(compile_node(node, 'eval'), temp_globals, {})
 
     def step_nodes(nodes, local_vars=None):
         for node in nodes:
-            if 'scope' in argv: print(f'\033[32m{pretty_json(filter_scope(local_vars))}\033[1;37m')
+            # Print or pause for stepping
+            if 'scope' in argv: 
+                print(f'\033[32m{pretty_json(filter_scope(local_vars))}\033[1;37m')
             (print if 'skip' in argv else input)(f"\033[1;31m>>> \033[33m{ast.unparse(node)}\033[1;37m")
 
             if isinstance(node, ast.FunctionDef):
                 def make_func(node):
                     arg_names = [arg.arg for arg in node.args.args]
+                    defaults = [eval_node(d, local_vars) for d in node.args.defaults] if node.args.defaults else []
+                    default_map = dict(zip(arg_names[-len(defaults):], defaults)) if defaults else {}
+
                     def func(*args, **kwargs):
-                        local_vars = dict(zip(arg_names, args))
-                        local_vars.update(kwargs)
+                        local_vars_inner = dict(zip(arg_names, args))
+                        for name in arg_names[len(args):]:
+                            if name in kwargs:
+                                local_vars_inner[name] = kwargs.pop(name)
+                            elif name in default_map:
+                                local_vars_inner[name] = default_map[name]
+                            else:
+                                raise TypeError(f"{node.name}() missing required argument: '{name}'")
+                        local_vars_inner.update(kwargs)
                         try:
-                            step_nodes(node.body, local_vars)
+                            step_nodes(node.body, local_vars_inner)
                         except ReturnValue as rv:
                             return rv.value
                     return func
 
-                func_obj = make_func(node)
-                (local_vars or exec_globals)[node.name] = func_obj
+                (local_vars or exec_globals)[node.name] = make_func(node)
 
             elif isinstance(node, ast.ClassDef):
                 exec_node(node, local_vars)
@@ -72,15 +92,20 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
                 for target in node.targets:
                     if isinstance(target, ast.Name):
                         (local_vars or exec_globals)[target.id] = value
+                    elif isinstance(target, ast.Tuple):
+                        # Unpack manually
+                        for t, v in zip(target.elts, value):
+                            (local_vars or exec_globals)[t.id] = v
                     else:
-                        exec_node(located(ast.Assign(targets=[target], value=node.value), node), local_vars)
+                        exec_node(located(ast.Assign(targets=[target], value=make_ast_from_value(value)), node), local_vars)
+
 
             elif isinstance(node, ast.For):
                 for item in eval_node(node.iter, local_vars):
                     if isinstance(node.target, ast.Name):
                         (local_vars or exec_globals)[node.target.id] = item
                     else:
-                        exec_node(located(ast.Assign(targets=[node.target], value=ast.Constant(item)), node), local_vars)
+                        exec_node(located(ast.Assign(targets=[node.target], value=make_ast_from_value(item)), node), local_vars)
                     step_nodes(node.body, local_vars)
                 if node.orelse:
                     step_nodes(node.orelse, local_vars)
