@@ -2,7 +2,10 @@ import ast
 from pathlib import Path
 
 def stepper(file_path: Path, debug=False):
-    exec_globals = {'__file__': str(file_path)}
+    exec_globals = {
+        '__file__': str(file_path),
+        '__name__': '__main__'
+    }
 
     class ReturnValue(Exception):
         def __init__(self, value):
@@ -45,9 +48,9 @@ def stepper(file_path: Path, debug=False):
     def step_through_nodes(nodes, local_vars=None):
         for node in nodes:
             if debug:
-                input(f">>> {ast.unparse(node)}")
+                input(f"\033[1;35m>>> \033[1;30m{ast.unparse(node)}\033[0m")
             else:
-                print(f">>> {ast.unparse(node)}")
+                print(f"\033[1;35m>>> \033[1;30m{ast.unparse(node)}\033[0m")
 
             if isinstance(node, ast.FunctionDef):
                 exec_node(node, local_vars)
@@ -128,13 +131,10 @@ def stepper(file_path: Path, debug=False):
     src = file_path.read_text(encoding="utf-8")
     parsed_ast = ast.parse(src, filename=file_path.name)
     step_through_nodes(parsed_ast.body)
-    return exec_globals
 
 if __name__ == '__main__':
-    from settrace import pretty_json, filter_scope, use_dir, argv
+    from settrace import use_dir, argv
     script_path = Path(argv[1]).resolve()
     assert script_path.name == 'test.py', 'this script is in dev!'
     with use_dir(script_path.parent):
-        exec_globals = stepper(script_path, debug=len(argv) != 3)
-    if (filtered_globals := filter_scope(exec_globals)):
-        print('Globals: ' +  pretty_json(filtered_globals))
+        stepper(script_path, debug=len(argv) != 3)
