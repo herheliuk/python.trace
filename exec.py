@@ -49,6 +49,24 @@ def stepper(file_path: Path, debug=False):
     def print_line(s: str, depth: int):
         indent = "    " * depth
         print(f"{indent}{s}")
+    
+    def astify_value(value):
+        """Convert Python value into a proper AST node."""
+        if isinstance(value, (int, float, str, bool)) or value is None:
+            return ast.Constant(value=value)
+        elif isinstance(value, dict):
+            return ast.Dict(
+                keys=[astify_value(k) for k in value.keys()],
+                values=[astify_value(v) for v in value.values()]
+            )
+        elif isinstance(value, list):
+            return ast.List(elts=[astify_value(v) for v in value], ctx=ast.Load())
+        elif isinstance(value, tuple):
+            return ast.Tuple(elts=[astify_value(v) for v in value], ctx=ast.Load())
+        elif isinstance(value, set):
+            return ast.Set(elts=[astify_value(v) for v in value])
+        else:
+            raise TypeError(f"Cannot convert {type(value)} to AST")
 
     # ---------- core exec/eval ----------
     def exec_node(node, local_vars=None, globals_dict=None, filename=None):
@@ -247,7 +265,7 @@ def stepper(file_path: Path, debug=False):
                     if isinstance(node.target, ast.Name):
                         (local_vars or g)[node.target.id] = item
                     else:
-                        assign_node = located(ast.Assign(targets=[node.target], value=ast.Constant(item)), node)
+                        assign_node = located(ast.Assign(targets=[node.target], value=astify_value(item)), node)
                         exec_node(assign_node, local_vars, g, fname)
                     step_through_nodes(node.body, local_vars, g, fname, depth)
                 if node.orelse:
