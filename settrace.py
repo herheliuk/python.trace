@@ -101,8 +101,8 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
 
             elif event == 'exception':
                 exc_type, exc_value, exc_traceback = arg
-                print_step(f"{exc_type.__name__}: {exc_value}")
                 print_step(''.join(format_tb(exc_traceback)))
+                print_step(f"{exc_type.__name__}: {exc_value}")
                 return
         
         source_code = debug_script_path.read_text()
@@ -115,7 +115,8 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
         )
         
         exec_globals = {
-            '__file__': str(debug_script_path)
+            '__file__': str(debug_script_path),
+            '__name__': '__main__'
         }
         
         with use_dir(debug_script_path.parent), use_trace(trace_function):
