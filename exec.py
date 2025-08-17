@@ -107,6 +107,7 @@ def stepper(file_path: Path):
                     step_nodes(node.orelse, local_vars)
 
             else:
+                print(f"\033[1;31mUnknown node: {type(node).__name__}\033[1;37m")
                 exec_node(node, local_vars)
 
     source = file_path.read_text(encoding="utf-8")
