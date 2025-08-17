@@ -16,7 +16,7 @@ def default_json_handler(obj):
 
 pretty_json = partial(dumps, indent=4, default=default_json_handler)
 
-def erase_one_line_from_the_terminal():
+def erase_last_line_from_terminal():
     print("\033[F\033[K", end='', flush=True)
 
 def main(debug_script_path: Path, output_file: Path, interactive = None):
@@ -143,7 +143,7 @@ if __name__ == '__main__':
         print(f'Error: File "{debug_script_path.name}" does not exist or is a directory.')
         exit(1)
         
-    interactive = input('Step through? '); erase_one_line_from_the_terminal()
+    interactive = input('Step through? '); erase_last_line_from_terminal()
     
     output_file = Path.cwd() / (debug_script_path.stem + '.trace.txt')
         

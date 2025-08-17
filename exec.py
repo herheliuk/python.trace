@@ -1,7 +1,7 @@
 import ast
 from pathlib import Path
 
-def stepper(file_path: Path, debug=False):
+def stepper(file_path: Path):
     exec_globals = {'__file__': str(file_path)}
 
     class ReturnValue(Exception):
@@ -24,10 +24,7 @@ def stepper(file_path: Path, debug=False):
 
     def exec_node(node, local_vars=None):
         code_obj = compile_stmt(node)
-        if local_vars is None:
-            exec(code_obj, exec_globals)  # use globals for both
-        else:
-            exec(code_obj, exec_globals, local_vars)
+        exec(code_obj, exec_globals, local_vars)
 
     def eval_ast_expr(node, local_vars=None):
         scope = exec_globals if local_vars is None else local_vars
@@ -44,11 +41,7 @@ def stepper(file_path: Path, debug=False):
 
     def step_through_nodes(nodes, local_vars=None):
         for node in nodes:
-            if debug:
-                input(f"\033[1;31m>>> \033[33m{ast.unparse(node)}\033[1;37m")
-            else:
-                print(f"\033[1;31m>>> \033[33m{ast.unparse(node)}\033[1;37m")
-
+            (input if len(argv) != 3 else print)(f"\033[1;31m>>> \033[33m{ast.unparse(node)}\033[1;37m")
             if isinstance(node, ast.FunctionDef):
                 exec_node(node, local_vars)
             elif isinstance(node, ast.ClassDef):
@@ -65,7 +58,8 @@ def stepper(file_path: Path, debug=False):
                         (local_vars or exec_globals)[target.id] = value
                     else:
                         assign_node = located(
-                            ast.Assign(targets=[target], value=node.value), node
+                            ast.Assign(targets=[target], value=node.value),
+                            node
                         )
                         exec_node(assign_node, local_vars)
             elif isinstance(node, ast.For):
@@ -75,7 +69,7 @@ def stepper(file_path: Path, debug=False):
                     else:
                         assign_node = located(
                             ast.Assign(targets=[node.target], value=ast.Constant(item)),
-                            node,
+                            node
                         )
                         exec_node(assign_node, local_vars)
                     step_through_nodes(node.body, local_vars)
@@ -107,11 +101,11 @@ def stepper(file_path: Path, debug=False):
             elif isinstance(node, ast.Try):
                 try:
                     step_through_nodes(node.body, local_vars)
-                except Exception as e:
+                except Exception as error:
                     handled = False
                     for handler in node.handlers:
                         if handler.type is None or isinstance(
-                            e, eval_ast_expr(handler.type, local_vars)
+                            error, eval_ast_expr(handler.type, local_vars)
                         ):
                             step_through_nodes(handler.body, local_vars)
                             handled = True
@@ -125,8 +119,8 @@ def stepper(file_path: Path, debug=False):
             else:
                 exec_node(node, local_vars)
 
-    src = file_path.read_text(encoding="utf-8")
-    parsed_ast = ast.parse(src, filename=file_path.name)
+    source_code = file_path.read_text(encoding="utf-8")
+    parsed_ast = ast.parse(source_code, filename=file_path.name)
     step_through_nodes(parsed_ast.body)
 
 if __name__ == '__main__':
@@ -134,4 +128,4 @@ if __name__ == '__main__':
     script_path = Path(argv[1]).resolve()
     assert script_path.name == 'test.py', 'this script is in dev!'
     with use_dir(script_path.parent):
-        stepper(script_path, debug=len(argv) != 3)
+        stepper(script_path)
