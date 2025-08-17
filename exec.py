@@ -23,7 +23,6 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
         return compile(mod, filename=str(file_path), mode=mode)
 
     def make_ast_from_value(value):
-        """Create an AST node from any Python object."""
         return ast.parse(repr(value), mode='eval').body
 
     def exec_node(node, local_vars=None):
@@ -37,7 +36,6 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
         if isinstance(node, ast.Constant):
             return node.value
 
-        # Merge local_vars into globals for generator expressions / comprehensions
         temp_globals = exec_globals.copy()
         if local_vars:
             temp_globals.update(local_vars)
@@ -46,118 +44,115 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
 
     def step_nodes(nodes, local_vars=None):
         for node in nodes:
-            # Print or pause for stepping
             if 'scope' in argv: 
                 print(f'\033[32m{pretty_json(filter_scope(local_vars))}\033[1;37m')
             (print if 'skip' in argv else input)(f"\033[1;31m>>> \033[33m{ast.unparse(node)}\033[1;37m")
 
-            if isinstance(node, ast.FunctionDef):
-                def make_func(node):
-                    arg_names = [arg.arg for arg in node.args.args]
-                    defaults = [eval_node(d, local_vars) for d in node.args.defaults] if node.args.defaults else []
-                    default_map = dict(zip(arg_names[-len(defaults):], defaults)) if defaults else {}
+            match node:
+                case ast.FunctionDef():
+                    def make_func(node):
+                        arg_names = [arg.arg for arg in node.args.args]
+                        defaults = [eval_node(d, local_vars) for d in node.args.defaults] if node.args.defaults else []
+                        default_map = dict(zip(arg_names[-len(defaults):], defaults)) if defaults else {}
 
-                    def func(*args, **kwargs):
-                        local_vars_inner = dict(zip(arg_names, args))
-                        for name in arg_names[len(args):]:
-                            if name in kwargs:
-                                local_vars_inner[name] = kwargs.pop(name)
-                            elif name in default_map:
-                                local_vars_inner[name] = default_map[name]
-                            else:
-                                raise TypeError(f"{node.name}() missing required argument: '{name}'")
-                        local_vars_inner.update(kwargs)
-                        try:
-                            step_nodes(node.body, local_vars_inner)
-                        except ReturnValue as rv:
-                            return rv.value
-                    return func
+                        def func(*args, **kwargs):
+                            local_vars_inner = dict(zip(arg_names, args))
+                            for name in arg_names[len(args):]:
+                                if name in kwargs:
+                                    local_vars_inner[name] = kwargs.pop(name)
+                                elif name in default_map:
+                                    local_vars_inner[name] = default_map[name]
+                                else:
+                                    raise TypeError(f"{node.name}() missing required argument: '{name}'")
+                            local_vars_inner.update(kwargs)
+                            try:
+                                step_nodes(node.body, local_vars_inner)
+                            except ReturnValue as rv:
+                                return rv.value
+                        return func
 
-                (local_vars or exec_globals)[node.name] = make_func(node)
+                    (local_vars or exec_globals)[node.name] = make_func(node)
 
-            elif isinstance(node, ast.ClassDef):
-                exec_node(node, local_vars)
+                case ast.ClassDef():
+                    exec_node(node, local_vars)
 
-            elif isinstance(node, ast.Return):
-                if local_vars is None:
-                    raise SyntaxError("'return' outside function")
-                value = eval_node(node.value, local_vars) if node.value else None
-                raise ReturnValue(value)
+                case ast.Return():
+                    if local_vars is None:
+                        raise SyntaxError("'return' outside function")
+                    value = eval_node(node.value, local_vars) if node.value else None
+                    raise ReturnValue(value)
 
-            elif isinstance(node, ast.Expr):
-                eval_node(node.value, local_vars)
+                case ast.Expr():
+                    eval_node(node.value, local_vars)
 
-            elif isinstance(node, ast.Assign):
-                value = eval_node(node.value, local_vars)
-                for target in node.targets:
-                    if isinstance(target, ast.Name):
-                        (local_vars or exec_globals)[target.id] = value
-                    elif isinstance(target, ast.Tuple):
-                        # Unpack manually
-                        for t, v in zip(target.elts, value):
-                            (local_vars or exec_globals)[t.id] = v
-                    else:
-                        exec_node(located(ast.Assign(targets=[target], value=make_ast_from_value(value)), node), local_vars)
+                case ast.Assign():
+                    value = eval_node(node.value, local_vars)
+                    for target in node.targets:
+                        if isinstance(target, ast.Name):
+                            (local_vars or exec_globals)[target.id] = value
+                        elif isinstance(target, ast.Tuple):
+                            for t, v in zip(target.elts, value):
+                                (local_vars or exec_globals)[t.id] = v
+                        else:
+                            exec_node(located(ast.Assign(targets=[target], value=make_ast_from_value(value)), node), local_vars)
 
+                case ast.For():
+                    for item in eval_node(node.iter, local_vars):
+                        if isinstance(node.target, ast.Name):
+                            (local_vars or exec_globals)[node.target.id] = item
+                        else:
+                            exec_node(located(ast.Assign(targets=[node.target], value=make_ast_from_value(item)), node), local_vars)
+                        step_nodes(node.body, local_vars)
+                    if node.orelse:
+                        step_nodes(node.orelse, local_vars)
 
-            elif isinstance(node, ast.For):
-                for item in eval_node(node.iter, local_vars):
-                    if isinstance(node.target, ast.Name):
-                        (local_vars or exec_globals)[node.target.id] = item
-                    else:
-                        exec_node(located(ast.Assign(targets=[node.target], value=make_ast_from_value(item)), node), local_vars)
-                    step_nodes(node.body, local_vars)
-                if node.orelse:
-                    step_nodes(node.orelse, local_vars)
+                case ast.While():
+                    while eval_node(node.test, local_vars):
+                        step_nodes(node.body, local_vars)
+                    if node.orelse:
+                        step_nodes(node.orelse, local_vars)
 
-            elif isinstance(node, ast.While):
-                while eval_node(node.test, local_vars):
-                    step_nodes(node.body, local_vars)
-                if node.orelse:
-                    step_nodes(node.orelse, local_vars)
+                case ast.If():
+                    branch = node.body if eval_node(node.test, local_vars) else node.orelse
+                    step_nodes(branch, local_vars)
 
-            elif isinstance(node, ast.If):
-                branch = node.body if eval_node(node.test, local_vars) else node.orelse
-                step_nodes(branch, local_vars)
+                case ast.With():
+                    exits = []
+                    for item in node.items:
+                        context = eval_node(item.context_expr, local_vars)
+                        value = context.__enter__()
+                        if item.optional_vars and isinstance(item.optional_vars, ast.Name):
+                            (local_vars or exec_globals)[item.optional_vars.id] = value
+                        exits.append(context.__exit__)
+                    try:
+                        step_nodes(node.body, local_vars)
+                    finally:
+                        for exit_ in reversed(exits):
+                            exit_(None, None, None)
 
-            elif isinstance(node, ast.With):
-                exits = []
-                for item in node.items:
-                    context = eval_node(item.context_expr, local_vars)
-                    value = context.__enter__()
-                    if item.optional_vars and isinstance(item.optional_vars, ast.Name):
-                        (local_vars or exec_globals)[item.optional_vars.id] = value
-                    exits.append(context.__exit__)
-                try:
-                    step_nodes(node.body, local_vars)
-                finally:
-                    for exit_ in reversed(exits):
-                        exit_(None, None, None)
-
-            elif isinstance(node, ast.Try):
-                no_exc = True
-                try:
-                    step_nodes(node.body, local_vars)
-                except ReturnValue:
-                    no_exc = False
-                    raise
-                except Exception as error:
-                    no_exc = False
-                    handled = False
-                    for handler in node.handlers:
-                        if handler.type is None or isinstance(error, eval_node(handler.type, local_vars)):
-                            step_nodes(handler.body, local_vars)
-                            handled = True
-                            break
-                    if not handled:
+                case ast.Try():
+                    no_exc = True
+                    try:
+                        step_nodes(node.body, local_vars)
+                    except ReturnValue:
+                        no_exc = False
                         raise
-                finally:
-                    step_nodes(node.finalbody, local_vars)
-                if no_exc and node.orelse:
-                    step_nodes(node.orelse, local_vars)
+                    except Exception as error:
+                        no_exc = False
+                        handled = False
+                        for handler in node.handlers:
+                            if handler.type is None or isinstance(error, eval_node(handler.type, local_vars)):
+                                step_nodes(handler.body, local_vars)
+                                handled = True
+                                break
+                        if not handled:
+                            raise
+                    finally:
+                        step_nodes(node.finalbody, local_vars)
+                    if no_exc and node.orelse:
+                        step_nodes(node.orelse, local_vars)
 
-            elif isinstance(node, (ast.Import, ast.ImportFrom)):
-                if isinstance(node, ast.Import):
+                case ast.Import():
                     for alias in node.names:
                         mod_name = alias.name
                         asname = alias.asname or alias.name
@@ -169,7 +164,8 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
                             (local_vars or exec_globals)[asname] = mod_obj
                         else:
                             (local_vars or exec_globals)[asname] = __import__(mod_name)
-                elif isinstance(node, ast.ImportFrom):
+
+                case ast.ImportFrom():
                     mod_name = node.module
                     mod_path = Path(mod_name.replace('.', '/') + '.py')
                     if mod_path.exists():
@@ -186,13 +182,13 @@ def stepper(file_path: Path, exec_globals=None, module_name=None):
                             name = alias.name
                             asname = alias.asname or name
                             (local_vars or exec_globals)[asname] = getattr(mod, name)
-            
-            elif isinstance(node, ast.Match):
-                print('\033[1;31mMatch/Case is not supported yet.\033[1;37m'); exit()
 
-            else:
-                print(f"\033[1;31mUnknown node: {type(node).__name__}\033[1;37m")
-                exec_node(node, local_vars)
+                case ast.Match():
+                    print('\033[1;31mMatch/Case is not supported yet.\033[1;37m'); exit()
+
+                case _:
+                    print(f"\033[1;31mUnknown node: {type(node).__name__}\033[1;37m")
+                    exec_node(node, local_vars)
 
     source = file_path.read_text(encoding="utf-8")
     parsed = ast.parse(source, filename=file_path.name)
