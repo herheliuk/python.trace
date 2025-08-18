@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+from json import dumps
+from functools import partial
+
+def default_json_handler(obj):
+    return f"<{type(obj).__name__}>"
+
+pretty_scope = partial(dumps, indent=4, default=default_json_handler)
+
 def filter_scope(scope: dict):
     return {key: value for key, value in scope.items() if key[:2] != "__"}
 
