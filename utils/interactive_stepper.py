@@ -36,9 +36,9 @@ def await_command(prompt):
                 stdout.flush()
                 
                 stdout.write('\n')
-                lineno = buffer.decode()
-                if lineno.isdigit():
-                    return 'int', lineno
+                decoded = buffer.decode()
+                if decoded.isdigit():
+                    return 'int', decoded
                 return 'enter', None
 
             # Backspace
