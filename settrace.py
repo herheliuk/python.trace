@@ -108,8 +108,8 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
         )
         
         exec_globals = {
-            '__file__': str(debug_script_path),
-            '__name__': '__main__'
+            '__name__': '__main__',
+            '__file__': str(debug_script_path)
         }
         
         with use_dir(debug_script_path.parent), use_trace(trace_function):
