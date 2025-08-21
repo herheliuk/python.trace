@@ -29,23 +29,13 @@ def use_trace(trace_function):
         settrace(old_trace)
 
 @contextmanager
-def step_io(output_file: Path, interactive: bool, jump_line, revert_line):    
+def step_io(output_file: Path, interactive = None):
     if interactive:
-        from utils.interactive_stepper import await_command
-        
         def print_step(text):
             print(text)
             
         def input_step(text):
-            code, return_value = await_command(text)
-            
-            match code:
-                case 'enter':
-                    return
-                case 'backspace':
-                    revert_line()
-                case 'int':
-                    jump_line(return_value)
+            input(text)
         
         def finalize():
             pass

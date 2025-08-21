@@ -24,13 +24,7 @@ def main(debug_script_path: Path, output_file: Path, interactive = None):
         for path in paths_to_trace
     }
     
-    def revert_line():
-        ...
-    
-    def jump_line(lineno):
-        ...
-    
-    with step_io(output_file, interactive, jump_line, revert_line) as (print_step, input_step):
+    with step_io(output_file, interactive) as (print_step, input_step):
         def trace_function(frame, event, arg):
             str_code_filepath = frame.f_code.co_filename
             if str_code_filepath not in str_paths_to_trace: return

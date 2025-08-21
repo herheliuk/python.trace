@@ -62,8 +62,8 @@ if __name__ == '__main__':
 
         match code:
             case 'enter':
-                print("NEXT LINE")
+                print("NEXT")
             case 'backspace':
-                print("PREV LINE")
+                print("PREV")
             case 'int':
-                print(f"JUMP LINE {return_value}")
+                print(f"JUMP {return_value}")
